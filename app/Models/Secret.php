@@ -32,7 +32,39 @@ class Secret extends Model
      */
     protected $fillable = [
         'content',
+        'requires_confirmation',
+        'password',
     ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'requires_confirmation' => 'boolean',
+            'password' => 'hashed',
+        ];
+    }
+
+    /**
+     * Check if the secret is password protected.
+     */
+    public function isPasswordProtected(): bool
+    {
+        return $this->password !== null;
+    }
 
     /**
      * Bootstrap the model.
