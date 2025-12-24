@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Observers\SecretObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
+#[ObservedBy(SecretObserver::class)]
 class Secret extends Model
 {
     /** @use HasFactory<\Database\Factories\SecretFactory> */
@@ -52,5 +56,13 @@ class Secret extends Model
         } while (self::whereId($id)->exists());
 
         return $id;
+    }
+
+    /**
+     * Scope a query to only include secrets older than the given number of days.
+     */
+    public function scopeOlderThan(Builder $query, int $days): Builder
+    {
+        return $query->whereDate('created_at', '<', now()->subDays($days));
     }
 }
