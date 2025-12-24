@@ -13,9 +13,9 @@ class SecretController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'content' => ['required', 'string'],
+            'content' => ['required', 'string', 'max:1048576'],
             'requires_confirmation' => ['sometimes', 'boolean'],
-            'password' => ['sometimes', 'nullable', 'string', 'min:4'],
+            'password' => ['sometimes', 'nullable', 'string', 'min:4', 'max:255'],
         ]);
 
         $secret = Secret::create($validated);
@@ -54,12 +54,14 @@ class SecretController extends Controller
             }
         }
 
-        // Dispatch event to log retrieval and burn the secret
+        $content = $secret->content;
+        $createdAt = $secret->created_at->format('M j, Y \a\t g:i A');
+
         SecretRetrieved::dispatch($secret, $request->ip());
 
         return response()->json([
-            'content' => $secret->content,
-            'created_at' => $secret->created_at->format('M j, Y \a\t g:i A'),
+            'content' => $content,
+            'created_at' => $createdAt,
         ]);
     }
 }

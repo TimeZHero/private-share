@@ -12,10 +12,14 @@ render(function ($view, Secret $secret) {
     $accent = config('branding.accent_color');
     $showContainer = config('branding.logo.show_container');
 
-    // Normalize logo path
+    // Normalize and sanitize logo path (prevent directory traversal)
     $logoPath = config('branding.logo.image');
-    if ($logoPath && !str_starts_with($logoPath, '/') && !str_starts_with($logoPath, 'http')) {
-        $logoPath = '/' . $logoPath;
+    if ($logoPath) {
+        // Remove any directory traversal attempts
+        $logoPath = str_replace(['..', '\\'], '', $logoPath);
+        if (!str_starts_with($logoPath, '/') && !str_starts_with($logoPath, 'http')) {
+            $logoPath = '/' . $logoPath;
+        }
     }
 
     return response($view->with([

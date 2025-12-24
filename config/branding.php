@@ -59,7 +59,8 @@ return [
 
         // Path to logo image (relative to public directory)
         // Used when type is 'image'
-        'image' => env('BRANDING_LOGO_IMAGE', '/logo.svg'),
+        // SECURITY NOTE: Path is sanitized to prevent directory traversal
+        'image' => preg_replace('/\.\./', '', env('BRANDING_LOGO_IMAGE', '/logo.svg')),
 
         // Show the gradient container behind the logo
         // Set to false if your logo already includes its own background/container

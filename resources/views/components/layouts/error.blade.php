@@ -101,9 +101,13 @@
                     <div class="flex items-center justify-center text-sm text-slate-500">
                         <a href="{{ route('home') }}" class="flex items-center gap-2 hover:text-slate-300 transition-colors">
                             @php
+                                // Normalize and sanitize logo path (prevent directory traversal)
                                 $logoPath = config('branding.logo.image');
-                                if ($logoPath && !str_starts_with($logoPath, '/') && !str_starts_with($logoPath, 'http')) {
-                                    $logoPath = '/' . $logoPath;
+                                if ($logoPath) {
+                                    $logoPath = str_replace(['..', '\\'], '', $logoPath);
+                                    if (!str_starts_with($logoPath, '/') && !str_starts_with($logoPath, 'http')) {
+                                        $logoPath = '/' . $logoPath;
+                                    }
                                 }
                             @endphp
                             @if($showContainer)
