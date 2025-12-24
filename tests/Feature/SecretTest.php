@@ -11,7 +11,7 @@ test('index page displays the secret creation form', function () {
 });
 
 test('can create a secret via API', function () {
-    $response = $this->postJson('/secrets', [
+    $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
     ]);
 
@@ -24,7 +24,7 @@ test('can create a secret via API', function () {
 });
 
 test('can create a secret with confirmation required', function () {
-    $response = $this->postJson('/secrets', [
+    $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
         'requires_confirmation' => true,
     ]);
@@ -37,7 +37,7 @@ test('can create a secret with confirmation required', function () {
 });
 
 test('can create a secret with password protection', function () {
-    $response = $this->postJson('/secrets', [
+    $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
         'password' => 'mypassword123',
     ]);
@@ -52,7 +52,7 @@ test('can create a secret with password protection', function () {
 });
 
 test('password must be at least 4 characters', function () {
-    $response = $this->postJson('/secrets', [
+    $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
         'password' => 'abc',
     ]);
@@ -62,7 +62,7 @@ test('password must be at least 4 characters', function () {
 });
 
 test('secret id is a 12 character string', function () {
-    $this->postJson('/secrets', [
+    $this->postJson('/api/secrets', [
         'content' => 'Test content',
     ]);
 
@@ -86,7 +86,7 @@ test('can view a secret page', function () {
 test('can check secret requirements', function () {
     $secret = Secret::factory()->create();
 
-    $response = $this->getJson("/secrets/{$secret->id}/check");
+    $response = $this->getJson("/api/secrets/{$secret->id}/check");
 
     $response->assertSuccessful();
     $response->assertJson([
@@ -98,7 +98,7 @@ test('can check secret requirements', function () {
 test('check returns correct flags for protected secret', function () {
     $secret = Secret::factory()->requiresConfirmation()->withPassword()->create();
 
-    $response = $this->getJson("/secrets/{$secret->id}/check");
+    $response = $this->getJson("/api/secrets/{$secret->id}/check");
 
     $response->assertSuccessful();
     $response->assertJson([
@@ -113,7 +113,7 @@ test('can retrieve a secret via API', function () {
     ]);
     $secretId = $secret->id;
 
-    $response = $this->postJson("/secrets/{$secretId}/retrieve");
+    $response = $this->postJson("/api/secrets/{$secretId}/retrieve");
 
     $response->assertSuccessful();
     $response->assertJson([
@@ -130,7 +130,7 @@ test('secret is deleted after being retrieved', function () {
     ]);
     $secretId = $secret->id;
 
-    $this->postJson("/secrets/{$secretId}/retrieve")->assertSuccessful();
+    $this->postJson("/api/secrets/{$secretId}/retrieve")->assertSuccessful();
 
     expect(Secret::find($secretId))->toBeNull();
 });
@@ -141,20 +141,20 @@ test('secret cannot be retrieved twice', function () {
     ]);
     $secretId = $secret->id;
 
-    $this->postJson("/secrets/{$secretId}/retrieve")->assertSuccessful();
+    $this->postJson("/api/secrets/{$secretId}/retrieve")->assertSuccessful();
 
-    $this->postJson("/secrets/{$secretId}/retrieve")->assertNotFound();
+    $this->postJson("/api/secrets/{$secretId}/retrieve")->assertNotFound();
 });
 
 test('password protected secret requires correct password', function () {
     $secret = Secret::factory()->withPassword('correctpassword')->create();
 
     // Without password
-    $response = $this->postJson("/secrets/{$secret->id}/retrieve");
+    $response = $this->postJson("/api/secrets/{$secret->id}/retrieve");
     $response->assertUnprocessable();
 
     // With wrong password
-    $response = $this->postJson("/secrets/{$secret->id}/retrieve", [
+    $response = $this->postJson("/api/secrets/{$secret->id}/retrieve", [
         'password' => 'wrongpassword',
     ]);
     $response->assertForbidden();
@@ -166,7 +166,7 @@ test('password protected secret requires correct password', function () {
     expect(Secret::find($secret->id))->not->toBeNull();
 
     // With correct password
-    $response = $this->postJson("/secrets/{$secret->id}/retrieve", [
+    $response = $this->postJson("/api/secrets/{$secret->id}/retrieve", [
         'password' => 'correctpassword',
     ]);
     $response->assertSuccessful();
@@ -176,7 +176,7 @@ test('password protected secret requires correct password', function () {
 });
 
 test('creating a secret requires content', function () {
-    $response = $this->postJson('/secrets', [
+    $response = $this->postJson('/api/secrets', [
         'content' => '',
     ]);
 
@@ -191,13 +191,13 @@ test('viewing non-existent secret returns 404', function () {
 });
 
 test('retrieving non-existent secret returns 404', function () {
-    $response = $this->postJson('/secrets/non-existent-id/retrieve');
+    $response = $this->postJson('/api/secrets/non-existent-id/retrieve');
 
     $response->assertNotFound();
 });
 
 test('checking non-existent secret returns 404', function () {
-    $response = $this->getJson('/secrets/non-existent-id/check');
+    $response = $this->getJson('/api/secrets/non-existent-id/check');
 
     $response->assertNotFound();
 });

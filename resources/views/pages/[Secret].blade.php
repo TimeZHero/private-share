@@ -621,7 +621,7 @@ render(function ($view, Secret $secret) {
                 }
 
                 try {
-                    const response = await fetch(`/secrets/${secretId}/check`, {
+                    const response = await fetch(`/api/secrets/${secretId}/check`, {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json',
@@ -697,12 +697,11 @@ render(function ($view, Secret $secret) {
                         payload.password = password;
                     }
 
-                    const response = await fetch(`/secrets/${secretId}/retrieve`, {
+                    const response = await fetch(`/api/secrets/${secretId}/retrieve`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
                         },
                         body: JSON.stringify(payload)
                     });
