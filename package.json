@@ -4,11 +4,13 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "format": "prettier --write ."
     },
     "devDependencies": {
         "playwright": "^1.57.0",
         "prettier": "^3.4.2",
+        "prettier-plugin-organize-imports": "^4.3.0",
         "prettier-plugin-tailwindcss": "^0.6.11"
     },
     "dependencies": {
