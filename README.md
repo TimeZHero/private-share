@@ -26,8 +26,9 @@ Built with Laravel, Folio, and Tailwind CSS.
 ## Self-Hosting
 
 This project is **not a service**. Fork it and deploy your own instance for maximum trust.
+This repository does not address deployment and the docker files are intended for development only.
 
-### Quick Start
+### Development
 
 ```bash
 git clone git@github.com:TimeZHero/private-share.git
@@ -36,18 +37,15 @@ composer install
 sail up -d
 ```
 
-### Customization
+### Testing
+
+```bash
+sail artisan test
+```
+
+### Branding
 
 Customize branding via environment variables or `config/branding.php`:
-
-```env
-APP_NAME="My Secret Share"
-BRANDING_PRIMARY_COLOR=blue
-BRANDING_SECONDARY_COLOR=indigo
-BRANDING_TAGLINE="Share secrets securely"
-BRANDING_LOGO_TYPE=image
-BRANDING_LOGO_IMAGE="my-logo.svg"
-```
 
 ## License
 
