@@ -1,9 +1,5 @@
 {
-    "agents": [
-        "cursor"
-    ],
-    "editors": [
-        "cursor"
-    ],
+    "agents": ["cursor"],
+    "editors": ["cursor"],
     "guidelines": []
 }
