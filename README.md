@@ -1,5 +1,8 @@
 # Private Share
 
+[![linter](https://github.com/TimeZHero/private-share/actions/workflows/lint.yml/badge.svg)](https://github.com/TimeZHero/private-share/actions/workflows/lint.yml)
+[![tests](https://github.com/TimeZHero/private-share/actions/workflows/tests.yml/badge.svg)](https://github.com/TimeZHero/private-share/actions/workflows/tests.yml)
+
 A self-hosted secret sharing app with **end-to-end encryption**. Share notes, passwords, or sensitive data securely. The encryption key never leaves your browser.
 
 Built with Laravel, Folio, and Tailwind CSS.
