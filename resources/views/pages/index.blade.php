@@ -202,7 +202,7 @@ if ($logoPath) {
                         {{ config('app.name') }}
                     </h1>
                     <p class="text-slate-400">
-                        {{ config('branding.tagline') }}
+                        Share secrets securely with end-to-end encryption
                     </p>
                     <p class="text-slate-500 text-sm mt-2">
                         <svg class="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
