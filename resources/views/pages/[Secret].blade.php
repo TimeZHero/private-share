@@ -267,13 +267,8 @@ render(function ($view, Secret $secret) {
                 <!-- Success View (shown when decryption works) -->
                 <div id="success-view" class="hidden">
                     <div class="text-center mb-8">
-                        <div class="inline-flex items-center justify-center w-14 h-14 mb-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
-                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
-                        </div>
                         <h1 class="text-3xl font-semibold tracking-tight mb-2">
-                            Secret Content
+                            Secret retrieved successfully
                         </h1>
                         <p class="text-slate-400" id="created-at-text">
                             Shared on {{ $createdAt }}
@@ -289,17 +284,7 @@ render(function ($view, Secret $secret) {
                         </div>
                     </div>
 
-                    <div class="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <a
-                            href="{{ route('home') }}"
-                            class="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl border border-slate-700 hover:border-slate-600 transition-all duration-200"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Create New Secret
-                        </a>
-
+                    <div class="mt-8 flex flex-col sm:flex-row items-center justify-end gap-4">
                         <div class="flex items-center gap-2">
                             <button
                                 onclick="copyMarkdown()"
@@ -326,11 +311,6 @@ render(function ($view, Secret $secret) {
                 <!-- Error View (shown when decryption fails) -->
                 <div id="error-view" class="hidden">
                     <div class="text-center mb-8">
-                        <div class="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
                         <h1 class="text-3xl font-semibold tracking-tight mb-3">
                             Decryption Failed
                         </h1>
@@ -406,16 +386,6 @@ render(function ($view, Secret $secret) {
                             </svg>
                             Retry Decryption
                         </button>
-
-                        <a
-                            href="{{ route('home') }}"
-                            class="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl border border-slate-700 hover:border-slate-600 transition-all duration-200"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            Create New Secret
-                        </a>
                     </div>
                 </div>
 
