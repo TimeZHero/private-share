@@ -72,6 +72,9 @@ render(function ($view, Secret $secret) {
                 margin-top: 1.5em;
                 margin-bottom: 0.5em;
             }
+            .prose > :first-child {
+                margin-top: 0;
+            }
             .prose h1 { font-size: 2em; }
             .prose h2 { font-size: 1.5em; }
             .prose h3 { font-size: 1.25em; }
@@ -278,7 +281,7 @@ render(function ($view, Secret $secret) {
                     <div class="relative group">
                         <div class="absolute -inset-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 rounded-2xl opacity-40 blur-sm"></div>
                         <div class="relative bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 min-h-[200px]">
-                            <div id="content" class="prose max-w-none">
+                            <div id="content" class="max-w-none">
                                 <!-- Decrypted content will appear here -->
                             </div>
                         </div>
@@ -287,7 +290,9 @@ render(function ($view, Secret $secret) {
                     <div class="mt-8 flex flex-col sm:flex-row items-center justify-end gap-4">
                         <div class="flex items-center gap-2">
                             <button
+                                id="copy-md-btn"
                                 onclick="copyMarkdown()"
+                                style="display: none;"
                                 class="inline-flex items-center gap-2 px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-xl border border-slate-700 hover:border-slate-600 transition-all duration-200"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -425,9 +430,10 @@ render(function ($view, Secret $secret) {
             let secretCreatedAt = null;
             let requiresConfirmation = false;
             let requiresPassword = false;
+            let markdownEnabled = false;
 
             // Store decrypted content for copy functionality
-            let decryptedMarkdown = null;
+            let decryptedRawContent = null;
 
             // Toggle password visibility
             function toggleAccessPasswordVisibility() {
@@ -480,7 +486,7 @@ render(function ($view, Secret $secret) {
 
             // Show error view
             function showError(detail) {
-                decryptedMarkdown = null;
+                decryptedRawContent = null;
                 hideAllViews();
                 document.getElementById('error-view').classList.remove('hidden');
                 if (detail) {
@@ -502,16 +508,31 @@ render(function ($view, Secret $secret) {
 
             // Show success view with decrypted content
             function showSuccess(content, createdAt) {
-                decryptedMarkdown = content;
+                decryptedRawContent = content;
                 hideAllViews();
                 document.getElementById('success-view').classList.remove('hidden');
-                document.getElementById('content').innerHTML = marked.parse(content);
+
+                const contentEl = document.getElementById('content');
+                const copyMdBtn = document.getElementById('copy-md-btn');
+
+                if (markdownEnabled) {
+                    contentEl.classList.add('prose');
+                    contentEl.innerHTML = marked.parse(content);
+                    copyMdBtn.style.display = '';
+                } else {
+                    contentEl.classList.remove('prose');
+                    contentEl.innerHTML = '';
+                    const pre = document.createElement('pre');
+                    pre.className = 'whitespace-pre-wrap break-words text-slate-200 text-sm leading-relaxed';
+                    pre.textContent = content;
+                    contentEl.appendChild(pre);
+                    copyMdBtn.style.display = 'none';
+                }
+
                 if (createdAt) {
                     document.getElementById('created-at-text').textContent = 'Shared on ' + createdAt;
                 }
 
-                // Replace history state to prevent back navigation from showing the secret again
-                // This removes the hash from history so going back won't reload with the key
                 history.replaceState({ secretViewed: true }, '', window.location.pathname);
             }
 
@@ -613,8 +634,8 @@ render(function ($view, Secret $secret) {
                     const data = await response.json();
                     requiresConfirmation = data.requires_confirmation;
                     requiresPassword = data.requires_password;
+                    markdownEnabled = data.markdown_enabled;
 
-                    // If confirmation or password is required, show the confirmation view
                     if (requiresConfirmation || requiresPassword) {
                         showConfirmation();
                     } else {
@@ -705,6 +726,7 @@ render(function ($view, Secret $secret) {
                     const data = await response.json();
                     encryptedContent = data.content;
                     secretCreatedAt = data.created_at;
+                    markdownEnabled = data.markdown_enabled;
 
                     // Now decrypt
                     showLoading('Decrypting...', 'Please wait while we decrypt your secret');
@@ -778,25 +800,30 @@ render(function ($view, Secret $secret) {
                 }
             }
 
-            // Copy rendered content (plain text) to clipboard
+            // Copy content to clipboard (plain text from rendered output, or raw if no markdown)
             function copyContent() {
-                if (!decryptedMarkdown) return;
+                if (!decryptedRawContent) return;
 
-                const contentEl = document.getElementById('content');
-                const plainText = contentEl.innerText || contentEl.textContent;
+                let textToCopy;
+                if (markdownEnabled) {
+                    const contentEl = document.getElementById('content');
+                    textToCopy = contentEl.innerText || contentEl.textContent;
+                } else {
+                    textToCopy = decryptedRawContent;
+                }
 
-                navigator.clipboard.writeText(plainText).then(function() {
+                navigator.clipboard.writeText(textToCopy).then(function() {
                     const btn = document.getElementById('copy-content-text');
                     btn.textContent = 'Copied!';
                     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
                 });
             }
 
-            // Copy original markdown to clipboard
+            // Copy original markdown source to clipboard
             function copyMarkdown() {
-                if (!decryptedMarkdown) return;
+                if (!decryptedRawContent) return;
 
-                navigator.clipboard.writeText(decryptedMarkdown).then(function() {
+                navigator.clipboard.writeText(decryptedRawContent).then(function() {
                     const btn = document.getElementById('copy-md-text');
                     btn.textContent = 'Copied!';
                     setTimeout(() => { btn.textContent = 'Copy as Markdown'; }, 2000);
@@ -806,10 +833,8 @@ render(function ($view, Secret $secret) {
             // Handle page restoration from bfcache (back/forward navigation)
             // This prevents showing the secret again when user presses back button
             window.addEventListener('pageshow', function(event) {
-                // event.persisted is true when page is restored from bfcache
                 if (event.persisted) {
-                    // Clear any sensitive data
-                    decryptedMarkdown = null;
+                    decryptedRawContent = null;
                     encryptedContent = null;
                     document.getElementById('content').innerHTML = '';
 
@@ -818,9 +843,8 @@ render(function ($view, Secret $secret) {
                 }
             });
 
-            // Clear sensitive content when navigating away
             window.addEventListener('pagehide', function() {
-                decryptedMarkdown = null;
+                decryptedRawContent = null;
                 document.getElementById('content').innerHTML = '';
             });
 

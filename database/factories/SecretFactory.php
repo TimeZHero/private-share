@@ -20,6 +20,7 @@ class SecretFactory extends Factory
             'content' => fake()->paragraphs(3, true),
             'requires_confirmation' => false,
             'password' => null,
+            'markdown_enabled' => false,
         ];
     }
 
@@ -30,6 +31,16 @@ class SecretFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'requires_confirmation' => true,
+        ]);
+    }
+
+    /**
+     * Indicate that the secret has markdown enabled.
+     */
+    public function withMarkdown(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'markdown_enabled' => true,
         ]);
     }
 

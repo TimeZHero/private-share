@@ -36,6 +36,30 @@ test('can create a secret with confirmation required', function () {
     expect($secret->requires_confirmation)->toBeTrue();
 });
 
+test('can create a secret with markdown enabled', function () {
+    $response = $this->postJson('/api/secrets', [
+        'content' => 'encrypted-content-here',
+        'markdown_enabled' => true,
+    ]);
+
+    $response->assertSuccessful();
+
+    $secret = Secret::first();
+    expect($secret)->not->toBeNull();
+    expect($secret->markdown_enabled)->toBeTrue();
+});
+
+test('secrets have markdown disabled by default', function () {
+    $response = $this->postJson('/api/secrets', [
+        'content' => 'encrypted-content-here',
+    ]);
+
+    $response->assertSuccessful();
+
+    $secret = Secret::first();
+    expect($secret->markdown_enabled)->toBeFalse();
+});
+
 test('can create a secret with password protection', function () {
     $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
@@ -92,6 +116,7 @@ test('can check secret requirements', function () {
     $response->assertJson([
         'requires_confirmation' => false,
         'requires_password' => false,
+        'markdown_enabled' => false,
     ]);
 });
 
@@ -104,6 +129,17 @@ test('check returns correct flags for protected secret', function () {
     $response->assertJson([
         'requires_confirmation' => true,
         'requires_password' => true,
+    ]);
+});
+
+test('check returns markdown_enabled flag when enabled', function () {
+    $secret = Secret::factory()->withMarkdown()->create();
+
+    $response = $this->getJson("/api/secrets/{$secret->id}/check");
+
+    $response->assertSuccessful();
+    $response->assertJson([
+        'markdown_enabled' => true,
     ]);
 });
 
@@ -122,6 +158,33 @@ test('can retrieve a secret via API', function () {
 
     // Secret should be deleted after retrieval
     expect(Secret::find($secretId))->toBeNull();
+});
+
+test('retrieve returns markdown_enabled flag', function () {
+    $secret = Secret::factory()->withMarkdown()->create([
+        'content' => 'encrypted-content',
+    ]);
+
+    $response = $this->postJson("/api/secrets/{$secret->id}/retrieve");
+
+    $response->assertSuccessful();
+    $response->assertJson([
+        'content' => 'encrypted-content',
+        'markdown_enabled' => true,
+    ]);
+});
+
+test('retrieve returns markdown_enabled as false by default', function () {
+    $secret = Secret::factory()->create([
+        'content' => 'encrypted-content',
+    ]);
+
+    $response = $this->postJson("/api/secrets/{$secret->id}/retrieve");
+
+    $response->assertSuccessful();
+    $response->assertJson([
+        'markdown_enabled' => false,
+    ]);
 });
 
 test('secret is deleted after being retrieved', function () {

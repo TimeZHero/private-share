@@ -56,6 +56,9 @@ if ($logoPath) {
                 margin-top: 1em;
                 margin-bottom: 0.5em;
             }
+            .prose > :first-child {
+                margin-top: 0;
+            }
             .prose h1 { font-size: 1.75em; }
             .prose h2 { font-size: 1.4em; }
             .prose h3 { font-size: 1.15em; }
@@ -221,8 +224,8 @@ if ($logoPath) {
 
                 <!-- Editor View -->
                 <div id="editor-view">
-                    <!-- Markdown Toolbar -->
-                    <div class="flex flex-wrap items-center gap-1 mb-2 p-2 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl">
+                    <!-- Markdown Toolbar (hidden by default) -->
+                    <div id="markdown-toolbar" class="hidden flex flex-wrap items-center gap-1 mb-2 p-2 bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-xl animate-fadeIn">
                         <div class="flex items-center gap-1">
                             <button type="button" onclick="insertMarkdown('heading')" class="toolbar-btn" title="Heading (Ctrl+H)">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h10m-7 4h4"/></svg>
@@ -293,19 +296,28 @@ if ($logoPath) {
 
                     <div class="relative group mb-4">
                         <div class="absolute -inset-1 bg-gradient-to-r from-{{ $primary }}-600 via-{{ $secondary }}-600 to-{{ $primary }}-600 rounded-2xl opacity-40 blur-sm group-focus-within:opacity-60 transition-opacity"></div>
-                        <div class="relative grid grid-cols-1 lg:grid-cols-2 gap-0 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden">
-                            <!-- Textarea -->
+                        <!-- Plain editor (default, no markdown) -->
+                        <div id="plain-editor" class="relative bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden p-4">
+                            <textarea
+                                id="content"
+                                rows="10"
+                                placeholder="Write your secret here..."
+                                class="w-full min-h-[250px] px-2 py-2 bg-transparent text-slate-100 placeholder-slate-600 text-sm leading-relaxed resize-none focus:outline-none"
+                                oninput="updatePreview()"
+                            ></textarea>
+                        </div>
+                        <!-- Markdown editor with preview (hidden by default) -->
+                        <div id="markdown-editor" class="hidden relative grid grid-cols-1 lg:grid-cols-2 gap-0 bg-slate-900/90 backdrop-blur-sm border border-slate-700/50 rounded-2xl overflow-hidden">
                             <div class="relative">
                                 <div class="absolute top-3 left-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Editor</div>
                                 <textarea
-                                    id="content"
+                                    id="content-markdown"
                                     rows="10"
                                     placeholder="Write your secret here...&#10;&#10;**Bold**, *italic*, `code`&#10;- Lists&#10;> Quotes"
                                     class="w-full h-full min-h-[250px] px-4 pt-10 pb-4 bg-transparent text-slate-100 placeholder-slate-600 text-sm leading-relaxed resize-none focus:outline-none border-b lg:border-b-0 lg:border-r border-slate-700/50"
                                     oninput="updatePreview()"
                                 ></textarea>
                             </div>
-                            <!-- Preview -->
                             <div class="relative">
                                 <div class="absolute top-3 left-4 text-xs font-medium text-slate-500 uppercase tracking-wider">Preview</div>
                                 <div id="preview" class="prose w-full h-full min-h-[250px] px-4 pt-10 pb-4 text-sm overflow-y-auto">
@@ -319,6 +331,13 @@ if ($logoPath) {
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-3 bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl">
                         <!-- Security Options (compact) -->
                         <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                            <!-- Markdown Toggle -->
+                            <label class="flex items-center gap-2 cursor-pointer group" title="Enable markdown formatting and preview">
+                                <input type="checkbox" id="enable-markdown" class="toggle-input sr-only" onchange="toggleMarkdownMode()">
+                                <div class="toggle-switch-sm"></div>
+                                <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">Markdown</span>
+                            </label>
+
                             <!-- Confirmation Toggle -->
                             <label class="flex items-center gap-2 cursor-pointer group" title="Recipient must confirm before viewing">
                                 <input type="checkbox" id="requires-confirmation" class="toggle-input sr-only">
@@ -455,7 +474,7 @@ if ($logoPath) {
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                             </svg>
-                            <span>Markdown Support</span>
+                            <span>Optional Markdown</span>
                         </div>
                     </div>
                 </div>
@@ -463,9 +482,50 @@ if ($logoPath) {
         </div>
 
         <script>
+            let markdownEnabled = false;
+
+            // Get the currently active textarea
+            function getActiveTextarea() {
+                return markdownEnabled
+                    ? document.getElementById('content-markdown')
+                    : document.getElementById('content');
+            }
+
+            // Get the content value from whichever textarea is active
+            function getContentValue() {
+                return getActiveTextarea().value;
+            }
+
+            // Toggle markdown mode on/off
+            function toggleMarkdownMode() {
+                markdownEnabled = document.getElementById('enable-markdown').checked;
+                const toolbar = document.getElementById('markdown-toolbar');
+                const plainEditor = document.getElementById('plain-editor');
+                const markdownEditor = document.getElementById('markdown-editor');
+                const plainTextarea = document.getElementById('content');
+                const markdownTextarea = document.getElementById('content-markdown');
+
+                if (markdownEnabled) {
+                    markdownTextarea.value = plainTextarea.value;
+                    plainEditor.classList.add('hidden');
+                    markdownEditor.classList.remove('hidden');
+                    toolbar.classList.remove('hidden');
+                    updatePreview();
+                    markdownTextarea.focus();
+                } else {
+                    plainTextarea.value = markdownTextarea.value;
+                    markdownEditor.classList.add('hidden');
+                    plainEditor.classList.remove('hidden');
+                    toolbar.classList.add('hidden');
+                    plainTextarea.focus();
+                }
+            }
+
             // Update preview as user types
             function updatePreview() {
-                const content = document.getElementById('content').value;
+                if (!markdownEnabled) return;
+
+                const content = document.getElementById('content-markdown').value;
                 const preview = document.getElementById('preview');
 
                 if (content.trim() === '') {
@@ -477,7 +537,7 @@ if ($logoPath) {
 
             // Insert markdown at cursor position
             function insertMarkdown(type) {
-                const textarea = document.getElementById('content');
+                const textarea = getActiveTextarea();
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const text = textarea.value;
@@ -623,11 +683,14 @@ if ($logoPath) {
                 }
             }
 
-            // Keyboard shortcuts
+            // Keyboard shortcuts (only active in markdown mode)
             document.addEventListener('DOMContentLoaded', function() {
-                const textarea = document.getElementById('content');
+                document.addEventListener('keydown', function(e) {
+                    if (!markdownEnabled) return;
 
-                textarea.addEventListener('keydown', function(e) {
+                    const active = document.activeElement;
+                    if (active !== document.getElementById('content-markdown')) return;
+
                     if (e.ctrlKey || e.metaKey) {
                         switch (e.key.toLowerCase()) {
                             case 'b':
@@ -708,7 +771,7 @@ if ($logoPath) {
 
             // Share secret
             async function shareSecret() {
-                const content = document.getElementById('content').value.trim();
+                const content = getContentValue().trim();
                 const btn = document.getElementById('share-btn');
                 const btnText = document.getElementById('share-btn-text');
                 const errorDiv = document.getElementById('error-message');
@@ -750,6 +813,7 @@ if ($logoPath) {
                     const payload = {
                         content: encryptedContent,
                         requires_confirmation: requiresConfirmation,
+                        markdown_enabled: markdownEnabled,
                     };
 
                     if (enablePassword && password) {
@@ -779,7 +843,7 @@ if ($logoPath) {
 
                     // Show success view with features info
                     document.getElementById('secret-link').value = secretLink;
-                    showSuccessFeatures(requiresConfirmation, enablePassword);
+                    showSuccessFeatures(requiresConfirmation, enablePassword, markdownEnabled);
                     document.getElementById('editor-view').classList.add('hidden');
                     document.getElementById('success-view').classList.remove('hidden');
 
@@ -794,9 +858,20 @@ if ($logoPath) {
             }
 
             // Show enabled features in success view
-            function showSuccessFeatures(confirmation, password) {
+            function showSuccessFeatures(confirmation, password, markdown) {
                 const featuresDiv = document.getElementById('enabled-features');
                 const features = [];
+
+                if (markdown) {
+                    features.push(`
+                        <div class="flex items-center gap-2 text-slate-300">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Markdown enabled</span>
+                        </div>
+                    `);
+                }
 
                 if (confirmation) {
                     features.push(`
@@ -844,7 +919,13 @@ if ($logoPath) {
             // Reset form for new secret
             function resetForm() {
                 document.getElementById('content').value = '';
+                document.getElementById('content-markdown').value = '';
                 document.getElementById('preview').innerHTML = '<p class="text-slate-600 italic">Preview will appear here...</p>';
+                document.getElementById('enable-markdown').checked = false;
+                markdownEnabled = false;
+                document.getElementById('markdown-toolbar').classList.add('hidden');
+                document.getElementById('markdown-editor').classList.add('hidden');
+                document.getElementById('plain-editor').classList.remove('hidden');
                 document.getElementById('requires-confirmation').checked = false;
                 document.getElementById('enable-password').checked = false;
                 document.getElementById('secret-password').value = '';

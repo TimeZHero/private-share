@@ -18,10 +18,12 @@ describe('Secret Creation E2E', function () {
             ->assertSee('Key Never Leaves Browser');
     });
 
-    it('displays markdown editor and preview', function () {
+    it('displays markdown editor and preview when markdown is enabled', function () {
         $page = visit('/');
 
-        $page->assertSee('Editor')
+        $page->assertDontSee('Markdown supported')
+            ->click('#enable-markdown ~ .toggle-switch-sm')
+            ->assertSee('Editor')
             ->assertSee('Preview')
             ->assertSee('Markdown supported');
     });

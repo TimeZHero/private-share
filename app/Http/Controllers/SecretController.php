@@ -16,6 +16,7 @@ class SecretController extends Controller
             'content' => ['required', 'string', 'max:1048576'],
             'requires_confirmation' => ['sometimes', 'boolean'],
             'password' => ['sometimes', 'nullable', 'string', 'min:4', 'max:255'],
+            'markdown_enabled' => ['sometimes', 'boolean'],
         ]);
 
         $secret = Secret::create($validated);
@@ -33,6 +34,7 @@ class SecretController extends Controller
         return response()->json([
             'requires_confirmation' => $secret->requires_confirmation,
             'requires_password' => $secret->isPasswordProtected(),
+            'markdown_enabled' => $secret->markdown_enabled,
         ]);
     }
 
@@ -62,6 +64,7 @@ class SecretController extends Controller
         return response()->json([
             'content' => $content,
             'created_at' => $createdAt,
+            'markdown_enabled' => $secret->markdown_enabled,
         ]);
     }
 }

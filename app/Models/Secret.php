@@ -34,6 +34,7 @@ class Secret extends Model
         'content',
         'requires_confirmation',
         'password',
+        'markdown_enabled',
     ];
 
     /**
@@ -55,6 +56,7 @@ class Secret extends Model
         return [
             'requires_confirmation' => 'boolean',
             'password' => 'hashed',
+            'markdown_enabled' => 'boolean',
         ];
     }
 
