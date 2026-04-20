@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\SharedFile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -51,6 +52,16 @@ class SecretFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'password' => $password,
+        ]);
+    }
+
+    /**
+     * Associate the secret with a shared file upload.
+     */
+    public function withFile(): static
+    {
+        return $this->state(fn () => [
+            'shared_file_id' => SharedFile::factory(),
         ]);
     }
 }

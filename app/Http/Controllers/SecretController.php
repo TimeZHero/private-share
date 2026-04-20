@@ -12,12 +12,24 @@ class SecretController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        $hasFile = ! empty($request->input('shared_file_id'));
+
         $validated = $request->validate([
-            'content' => ['required', 'string', 'max:1048576'],
+            'content' => ['nullable', 'string', 'max:1048576'],
             'requires_confirmation' => ['sometimes', 'boolean'],
-            'password' => ['sometimes', 'nullable', 'string', 'min:4', 'max:255'],
+            'password' => $hasFile
+                ? ['required', 'string', 'min:4', 'max:255']
+                : ['sometimes', 'nullable', 'string', 'min:4', 'max:255'],
             'markdown_enabled' => ['sometimes', 'boolean'],
+            'shared_file_id' => ['sometimes', 'nullable', 'string', 'exists:shared_files,id'],
         ]);
+
+        if (empty($validated['content']) && empty($validated['shared_file_id'])) {
+            return response()->json([
+                'message' => 'Either content or a file attachment is required.',
+                'errors' => ['content' => ['Either content or a file attachment is required.']],
+            ], 422);
+        }
 
         $secret = Secret::create($validated);
 
@@ -31,11 +43,26 @@ class SecretController extends Controller
      */
     public function check(Secret $secret): JsonResponse
     {
-        return response()->json([
+        $response = [
             'requires_confirmation' => $secret->requires_confirmation,
             'requires_password' => $secret->isPasswordProtected(),
             'markdown_enabled' => $secret->markdown_enabled,
-        ]);
+            'has_file' => $secret->hasFile(),
+        ];
+
+        if ($secret->hasFile()) {
+            $response['file'] = [
+                'original_name' => $secret->sharedFile->original_name,
+                'size' => $secret->sharedFile->size,
+                'formatted_size' => $secret->sharedFile->formattedSize(),
+                'mime_type' => $secret->sharedFile->mime_type,
+                'client_encrypted' => $secret->sharedFile->client_encrypted,
+                'encryption_salt' => $secret->sharedFile->encryption_salt,
+                'client_iv' => $secret->sharedFile->client_iv,
+            ];
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -61,10 +88,17 @@ class SecretController extends Controller
 
         SecretRetrieved::dispatch($secret, $request->ip());
 
-        return response()->json([
+        $response = [
             'content' => $content,
             'created_at' => $createdAt,
             'markdown_enabled' => $secret->markdown_enabled,
-        ]);
+            'has_file' => $secret->hasFile(),
+        ];
+
+        if ($secret->hasFile()) {
+            $response['file_id'] = $secret->shared_file_id;
+        }
+
+        return response()->json($response);
     }
 }

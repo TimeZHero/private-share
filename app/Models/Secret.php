@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 #[ObservedBy(SecretObserver::class)]
@@ -35,6 +36,7 @@ class Secret extends Model
         'requires_confirmation',
         'password',
         'markdown_enabled',
+        'shared_file_id',
     ];
 
     /**
@@ -66,6 +68,19 @@ class Secret extends Model
     public function isPasswordProtected(): bool
     {
         return $this->password !== null;
+    }
+
+    /**
+     * @return BelongsTo<SharedFile, $this>
+     */
+    public function sharedFile(): BelongsTo
+    {
+        return $this->belongsTo(SharedFile::class);
+    }
+
+    public function hasFile(): bool
+    {
+        return $this->shared_file_id !== null;
     }
 
     /**
