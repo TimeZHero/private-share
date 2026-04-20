@@ -1,11 +1,120 @@
 @import 'tailwindcss';
 
 @source '../views';
+@source '../js';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 }
+
+/*
+ * Branding CSS custom properties are injected server-side in app.blade.php
+ * via BrandingService::cssVariables() so the correct colors are painted
+ * on the very first frame — no flash of default purple.
+ *
+ * JS applyBrandingColors() still runs after hydration to keep vars in
+ * sync during SPA navigation.
+ */
+
+/* Toggle switch — uses branding primary */
+.toggle-switch-sm {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: color-mix(in srgb, var(--color-text) 20%, transparent);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+}
+.toggle-switch-sm::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: color-mix(in srgb, var(--color-text) 60%, transparent);
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+.toggle-input:checked + .toggle-switch-sm {
+    background: var(--color-button);
+}
+.toggle-input:checked + .toggle-switch-sm::after {
+    transform: translateX(16px);
+    background: var(--color-button-contrast);
+}
+.toggle-input:focus + .toggle-switch-sm {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-button) 30%, transparent);
+}
+
+/* Toolbar buttons */
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.5rem;
+    color: color-mix(in srgb, var(--color-text) 60%, transparent);
+    transition: all 0.15s ease;
+    font-size: 0.75rem;
+}
+.toolbar-btn:hover {
+    background: color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+    color: var(--color-text);
+}
+.toolbar-btn:active {
+    background: color-mix(in srgb, var(--color-primary-500) 30%, transparent);
+    transform: scale(0.95);
+}
+
+/* Prose (markdown rendered content) */
+.prose { color: var(--color-text); }
+.prose h1, .prose h2, .prose h3, .prose h4 {
+    color: var(--color-text); font-weight: 600; margin-top: 1em; margin-bottom: 0.5em;
+}
+.prose > :first-child { margin-top: 0; }
+.prose h1 { font-size: 1.75em; }
+.prose h2 { font-size: 1.4em; }
+.prose h3 { font-size: 1.15em; }
+.prose p { margin-bottom: 0.75em; line-height: 1.6; }
+.prose ul, .prose ol { margin: 0.75em 0; padding-left: 1.5em; }
+.prose li { margin: 0.35em 0; }
+.prose ul { list-style-type: disc; }
+.prose ol { list-style-type: decimal; }
+.prose code {
+    background: color-mix(in srgb, var(--color-primary-500) 15%, transparent);
+    color: var(--color-primary-400);
+    padding: 0.15em 0.35em; border-radius: 0.3rem; font-size: 0.85em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.prose pre {
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+    border-radius: 0.5rem; padding: 0.75em 1em; overflow-x: auto; margin: 1em 0;
+}
+.prose pre code { background: transparent; padding: 0; color: var(--color-text); }
+.prose a { color: var(--color-primary-400); text-decoration: underline; }
+.prose blockquote {
+    border-left: 3px solid var(--color-primary-500); padding-left: 1em;
+    margin: 1em 0; color: color-mix(in srgb, var(--color-text) 60%, transparent); font-style: italic;
+}
+.prose strong { color: var(--color-text); }
+.prose em { color: color-mix(in srgb, var(--color-text) 85%, transparent); }
+
+/* Animations */
+.animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Body font */
+body { font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; }
+.mono, textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; }
