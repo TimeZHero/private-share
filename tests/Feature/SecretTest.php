@@ -1,13 +1,19 @@
 <?php
 
+use App\Features\Authentication;
+use App\Features\FileUploads;
 use App\Models\Secret;
+use Inertia\Testing\AssertableInertia as Assert;
+use Laravel\Pennant\Feature;
 
-test('index page displays the secret creation form', function () {
+test('index page renders the Home component', function () {
+    Feature::purge([Authentication::class, FileUploads::class]);
+    config(['features.auth' => false, 'features.file_uploads' => false]);
+
     $response = $this->get('/');
 
     $response->assertStatus(200);
-    $response->assertSee(config('app.name'));
-    $response->assertSee('Share Secret');
+    $response->assertInertia(fn (Assert $page) => $page->component('Home'));
 });
 
 test('can create a secret via API', function () {
@@ -104,7 +110,9 @@ test('can view a secret page', function () {
     $response = $this->get("/{$secretId}");
 
     $response->assertStatus(200);
-    $response->assertSee($secretId);
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('Secret')
+        ->where('secretId', $secretId));
 });
 
 test('can check secret requirements', function () {

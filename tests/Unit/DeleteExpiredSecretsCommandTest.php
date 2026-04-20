@@ -7,7 +7,7 @@ test('command has correct signature and description', function () {
     $command = app(\App\Console\Commands\DeleteExpiredSecretsCommand::class);
 
     expect($command->getName())->toBe('secrets:cleanup');
-    expect($command->getDescription())->toBe('Delete secrets older than 30 days');
+    expect($command->getDescription())->toBe('Delete secrets, shared files older than 30 days, and stale pending uploads');
 });
 
 test('command deletes only expired secrets (30+ days old)', function () {

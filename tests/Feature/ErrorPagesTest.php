@@ -1,92 +1,92 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Inertia\Testing\AssertableInertia as Assert;
 
-it('renders 400 error page via 4xx handler', function () {
+it('renders 400 error page via Inertia', function () {
     Route::get('/test-400', fn () => abort(400));
 
-    $response = $this->get('/test-400');
-
-    $response->assertStatus(400);
-    $response->assertSee('400');
-    $response->assertSee('Bad Request');
+    $this->get('/test-400')
+        ->assertStatus(400)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 400));
 });
 
-it('renders 401 error page via 4xx handler', function () {
+it('renders 401 error page via Inertia', function () {
     Route::get('/test-401', fn () => abort(401));
 
-    $response = $this->get('/test-401');
-
-    $response->assertStatus(401);
-    $response->assertSee('401');
-    $response->assertSee('Unauthorized');
+    $this->get('/test-401')
+        ->assertStatus(401)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 401));
 });
 
 it('renders 404 error page', function () {
-    $response = $this->get('/non-existent-page-that-does-not-exist');
-
-    $response->assertStatus(404);
-    $response->assertSee('404');
-    $response->assertSee('Page Not Found');
-    $response->assertSee('Looking for a secret?');
+    $this->get('/non-existent-page-that-does-not-exist')
+        ->assertStatus(404)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 404));
 });
 
-it('renders 403 error page via 4xx handler', function () {
+it('renders 403 error page via Inertia', function () {
     Route::get('/test-403', fn () => abort(403));
 
-    $response = $this->get('/test-403');
-
-    $response->assertStatus(403);
-    $response->assertSee('403');
-    $response->assertSee('Forbidden');
+    $this->get('/test-403')
+        ->assertStatus(403)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 403));
 });
 
-it('renders 419 error page via 4xx handler', function () {
+it('renders 419 error page via Inertia', function () {
     Route::get('/test-419', fn () => abort(419));
 
-    $response = $this->get('/test-419');
-
-    $response->assertStatus(419);
-    $response->assertSee('419');
-    $response->assertSee('Page Expired');
+    $this->get('/test-419')
+        ->assertStatus(419)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 419));
 });
 
-it('renders 429 error page via 4xx handler', function () {
+it('renders 429 error page via Inertia', function () {
     Route::get('/test-429', fn () => abort(429));
 
-    $response = $this->get('/test-429');
-
-    $response->assertStatus(429);
-    $response->assertSee('429');
-    $response->assertSee('Too Many Requests');
+    $this->get('/test-429')
+        ->assertStatus(429)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 429));
 });
 
 it('renders 500 error page', function () {
     Route::get('/test-500', fn () => abort(500));
 
-    $response = $this->get('/test-500');
-
-    $response->assertStatus(500);
-    $response->assertSee('500');
-    $response->assertSee('Server Error');
+    $this->get('/test-500')
+        ->assertStatus(500)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 500));
 });
 
-it('renders 502 error page via 5xx handler', function () {
+it('renders 502 error page via Inertia', function () {
     Route::get('/test-502', fn () => abort(502));
 
-    $response = $this->get('/test-502');
-
-    $response->assertStatus(502);
-    $response->assertSee('502');
-    $response->assertSee('Bad Gateway');
+    $this->get('/test-502')
+        ->assertStatus(502)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 502));
 });
 
 it('renders 503 error page', function () {
     Route::get('/test-503', fn () => abort(503));
 
-    $response = $this->get('/test-503');
-
-    $response->assertStatus(503);
-    $response->assertSee('503');
-    $response->assertSee('Under Maintenance');
+    $this->get('/test-503')
+        ->assertStatus(503)
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Error')
+            ->where('status', 503));
 });

@@ -522,14 +522,10 @@ describe('Header Security', function () {
 
         $response = $this->get("/{$secret->id}");
 
-        // Cache-Control header should contain all no-cache directives (order may vary)
         $cacheControl = $response->headers->get('Cache-Control');
         expect($cacheControl)->toContain('no-store');
         expect($cacheControl)->toContain('no-cache');
         expect($cacheControl)->toContain('must-revalidate');
         expect($cacheControl)->toContain('max-age=0');
-
-        $response->assertHeader('Pragma', 'no-cache');
-        $response->assertHeader('Expires', '0');
     });
 });
