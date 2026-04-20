@@ -5,7 +5,7 @@
 
 A self-hosted secret sharing app with **end-to-end encryption**. Share notes, passwords, or sensitive data securely. The encryption key never leaves your browser.
 
-Built with Laravel, Folio, and Tailwind CSS.
+Built with Laravel and Tailwind CSS.
 
 ## Features
 

@@ -1,0 +1,27 @@
+---
+description: Core project decisions and architectural constraints for Private Share
+globs:
+alwaysApply: true
+---
+
+# Private Share — Project Decisions
+
+## Security Model
+
+- **End-to-end encryption**: All secret content and files are encrypted client-side (AES-256-GCM, PBKDF2 key derivation) before reaching the server. The server stores only ciphertext.
+- **Zero-knowledge**: The server must never be able to recover or read secrets, text or files. Encryption keys exist only in the URL fragment (`#key`) which is never sent to the server.
+- **Burn after reading**: Secrets are permanently deleted after a single retrieval. Files are deleted after a single download.
+- **Password protection**: When enabled, passwords are bcrypt-hashed server-side. Wrong password attempts must not delete or reveal the secret.
+- **No sensitive data in logs**: Logs must never contain secret content, encryption keys, plaintext passwords, or file contents. Audit only IDs, timestamps, and IP addresses.
+
+## Architecture
+
+- **React 19 + Inertia v2 + TypeScript**: Frontend uses React components served via Inertia.js. All frontend code lives in `resources/js/`.
+- **Atomic Design**: Components organized as atoms → molecules → organisms → layouts → pages (`resources/js/components/{atoms,molecules,organisms,layouts}/` and `resources/js/Pages/`).
+- **Dedicated logic files**: Business logic separated from React components into services (`resources/js/services/`), hooks (`resources/js/hooks/`), and libraries (`resources/js/lib/`). The crypto module (`lib/crypto.ts`) handles all E2E encryption primitives, and services orchestrate flows (secret sharing, secret viewing, file upload/download, markdown).
+- **Controller-based routing**: Standard Laravel controllers and `routes/web.php` — no Folio.
+- **Feature flags (independent)**: Two independent Pennant feature flags — `Authentication` (Google SSO, guest links, profile menu) and `FileUploads` (chunked encrypted uploads). Controlled via `FEATURE_AUTH` and `FEATURE_FILE_UPLOADS` env vars. People can fork and toggle them independently.
+- **Chunked file uploads**: Large files are split into 8 MB chunks, each encrypted individually with a derived chunk IV, uploaded via a three-step API (initiate → chunk → complete).
+- **Branding**: Colors, logo, and container style are configurable via `config/branding.php` and CSS custom properties (`--brand-primary`, `--brand-secondary`, `--brand-accent`).
+- **Shared props via Inertia middleware**: `HandleInertiaRequests` middleware shares `auth`, `branding`, `features`, `appName`, `debug`, and `flash` to all pages.
+- **Error pages**: Custom Inertia error pages render the `Error` React component for all standard HTTP error codes. JSON API requests bypass Inertia and return standard Laravel error responses.
