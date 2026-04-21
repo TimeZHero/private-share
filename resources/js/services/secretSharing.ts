@@ -1,5 +1,5 @@
-import { encryptContent, generateKey } from '@/lib/crypto';
 import { apiPost } from '@/lib/api';
+import { encryptContent, generateKey } from '@/lib/crypto';
 
 interface ShareSecretParams {
     content: string;
@@ -43,7 +43,9 @@ export function validateShareInputs(
     return null;
 }
 
-export async function shareSecret(params: ShareSecretParams): Promise<ShareResult> {
+export async function shareSecret(
+    params: ShareSecretParams,
+): Promise<ShareResult> {
     const {
         content,
         uploadedFileId,
@@ -55,7 +57,11 @@ export async function shareSecret(params: ShareSecretParams): Promise<ShareResul
 
     const hasFile = !!uploadedFileId;
     const hasText = content.trim().length > 0;
-    const encryptionKey = hasFile ? fileEncryptionKey : hasText ? generateKey() : null;
+    const encryptionKey = hasFile
+        ? fileEncryptionKey
+        : hasText
+          ? generateKey()
+          : null;
 
     let encryptedContent: string | null = null;
     if (hasText && encryptionKey) {
@@ -73,7 +79,9 @@ export async function shareSecret(params: ShareSecretParams): Promise<ShareResul
     const data = await apiPost<{ id: string }>('/api/secrets', payload);
 
     const baseUrl = window.location.origin;
-    const link = encryptionKey ? `${baseUrl}/${data.id}#${encryptionKey}` : `${baseUrl}/${data.id}`;
+    const link = encryptionKey
+        ? `${baseUrl}/${data.id}#${encryptionKey}`
+        : `${baseUrl}/${data.id}`;
 
     return {
         link,

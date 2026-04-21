@@ -1,8 +1,10 @@
+import { ApiError, apiGet, apiPost } from '@/lib/api';
 import { decryptContent } from '@/lib/crypto';
-import { apiGet, apiPost, ApiError } from '@/lib/api';
 import type { SecretCheckResponse, SecretRetrieveResponse } from '@/types';
 
-export async function checkRequirements(secretId: string): Promise<SecretCheckResponse> {
+export async function checkRequirements(
+    secretId: string,
+): Promise<SecretCheckResponse> {
     return apiGet<SecretCheckResponse>(`/api/secrets/${secretId}/check`);
 }
 
@@ -12,14 +14,22 @@ export async function retrieveSecret(
 ): Promise<SecretRetrieveResponse> {
     const payload: Record<string, unknown> = {};
     if (password) payload.password = password;
-    return apiPost<SecretRetrieveResponse>(`/api/secrets/${secretId}/retrieve`, payload);
+    return apiPost<SecretRetrieveResponse>(
+        `/api/secrets/${secretId}/retrieve`,
+        payload,
+    );
 }
 
-export async function decrypt(encryptedBase64: string, key: string): Promise<string> {
+export async function decrypt(
+    encryptedBase64: string,
+    key: string,
+): Promise<string> {
     return decryptContent(encryptedBase64, key);
 }
 
-export function getEncryptionKeyFromHash(): { valid: true; key: string } | { valid: false; error: string } {
+export function getEncryptionKeyFromHash():
+    | { valid: true; key: string }
+    | { valid: false; error: string } {
     const hash = window.location.hash;
     if (!hash || hash.length < 2) {
         return {
@@ -37,20 +47,29 @@ export function getEncryptionKeyFromHash(): { valid: true; key: string } | { val
     return { valid: true, key: encryptionKey };
 }
 
-export function extractKeyFromInput(input: string): { valid: true; key: string } | { valid: false; error: string } {
+export function extractKeyFromInput(
+    input: string,
+): { valid: true; key: string } | { valid: false; error: string } {
     let trimmed = input.trim();
     if (trimmed.includes('#')) {
         const hashIndex = trimmed.indexOf('#');
         trimmed = trimmed.substring(hashIndex + 1);
     }
     if (trimmed.length !== 8) {
-        return { valid: false, error: `Invalid key length. Expected 8 characters, got ${trimmed.length}.` };
+        return {
+            valid: false,
+            error: `Invalid key length. Expected 8 characters, got ${trimmed.length}.`,
+        };
     }
     return { valid: true, key: trimmed };
 }
 
 export function isPasswordError(error: unknown): boolean {
-    return error instanceof ApiError && error.status === 403 && error.data?.error === 'invalid_password';
+    return (
+        error instanceof ApiError &&
+        error.status === 403 &&
+        error.data?.error === 'invalid_password'
+    );
 }
 
 export function isNotFoundError(error: unknown): boolean {

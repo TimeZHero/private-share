@@ -1,9 +1,9 @@
 import { createInertiaApp } from '@inertiajs/react';
-import { createRoot } from 'react-dom/client';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { createRoot } from 'react-dom/client';
 
 createInertiaApp({
-    title: (title) => title ? `${title}` : 'Private Share',
+    title: (title) => (title ? `${title}` : 'Private Share'),
     resolve: (name) =>
         resolvePageComponent(
             `./Pages/${name}.tsx`,

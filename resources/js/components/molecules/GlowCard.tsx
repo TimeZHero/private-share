@@ -1,5 +1,5 @@
-import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { type ReactNode } from 'react';
 
 interface GlowCardProps {
     children: ReactNode;
@@ -28,7 +28,9 @@ export function GlowCard({
 
     const isCustomColor = !from;
     const gradientStyle = isCustomColor
-        ? { backgroundImage: `linear-gradient(to right, ${gradientFrom}, ${gradientVia}, ${gradientTo})` }
+        ? {
+              backgroundImage: `linear-gradient(to right, ${gradientFrom}, ${gradientVia}, ${gradientTo})`,
+          }
         : undefined;
 
     const gradientClasses = isCustomColor
@@ -36,17 +38,23 @@ export function GlowCard({
         : `from-${from} via-${via} to-${to}`;
 
     return (
-        <div className={cn('relative group flex flex-col', className)}>
+        <div className={cn('group relative flex flex-col', className)}>
             <div
                 className={cn(
                     'absolute -inset-1 rounded-2xl blur-sm',
                     opacity,
                     !isCustomColor && `bg-gradient-to-r ${gradientClasses}`,
-                    focusable && 'group-focus-within:opacity-60 transition-opacity',
+                    focusable &&
+                        'transition-opacity group-focus-within:opacity-60',
                 )}
                 style={isCustomColor ? gradientStyle : undefined}
             />
-            <div className={cn('relative flex-1 bg-[var(--color-surface)]/90 backdrop-blur-sm border border-white/10 rounded-2xl', padding)}>
+            <div
+                className={cn(
+                    'relative flex-1 rounded-2xl border border-white/10 bg-[var(--color-surface)]/90 backdrop-blur-sm',
+                    padding,
+                )}
+            >
                 {children}
             </div>
         </div>

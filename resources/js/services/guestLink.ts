@@ -7,7 +7,10 @@ interface GuestLinkResponse {
     expires_at: string;
 }
 
-export async function createAndCopyGuestLink(): Promise<{ url: string; expiresAt: string }> {
+export async function createAndCopyGuestLink(): Promise<{
+    url: string;
+    expiresAt: string;
+}> {
     const data = await apiPost<GuestLinkResponse>('/api/guest-links');
     await copyToClipboard(data.url);
     return { url: data.url, expiresAt: data.expires_at };

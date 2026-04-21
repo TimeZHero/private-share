@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { usePage, router } from '@inertiajs/react';
-import type { SharedPageProps } from '@/types';
 import { Button } from '@/components/atoms/Button';
 import { useGuestLink } from '@/hooks/useGuestLink';
+import type { SharedPageProps } from '@/types';
+import { router, usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function ProfileMenu() {
     const { auth, features } = usePage<SharedPageProps>().props;
@@ -14,7 +14,10 @@ export function ProfileMenu() {
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+            if (
+                wrapperRef.current &&
+                !wrapperRef.current.contains(event.target as Node)
+            ) {
                 setOpen(false);
             }
         }
@@ -33,19 +36,43 @@ export function ProfileMenu() {
     const displayEmail = user?.email ?? null;
     const initial = displayName.charAt(0).toUpperCase();
 
-    const guestLinkLabel = creating ? 'Creating...' : copied ? 'Copied!' : error ?? 'Create Guest Link';
+    const guestLinkLabel = creating
+        ? 'Creating...'
+        : copied
+          ? 'Copied!'
+          : (error ?? 'Create Guest Link');
 
     return (
         <div ref={wrapperRef} className="flex items-center gap-3">
             {user && (
                 <Button size="sm" onClick={create} disabled={creating}>
                     {copied ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                            />
                         </svg>
                     ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                            />
                         </svg>
                     )}
                     {guestLinkLabel}
@@ -58,30 +85,49 @@ export function ProfileMenu() {
                     className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
                 >
                     {user?.avatar ? (
-                        <img src={user.avatar} alt={displayName} className="w-10 h-10 rounded-full hover:opacity-80 transition-opacity ring-2 ring-[var(--color-text)]/15" referrerPolicy="no-referrer" />
+                        <img
+                            src={user.avatar}
+                            alt={displayName}
+                            className="h-10 w-10 rounded-full ring-2 ring-[var(--color-text)]/15 transition-opacity hover:opacity-80"
+                            referrerPolicy="no-referrer"
+                        />
                     ) : (
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-semibold bg-[var(--color-primary-500)] text-[var(--color-primary-contrast)] ring-2 ring-[var(--color-text)]/15">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-500)] text-base font-semibold text-[var(--color-primary-contrast)] ring-2 ring-[var(--color-text)]/15">
                             {initial}
                         </div>
                     )}
                 </button>
 
                 {open && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--color-surface-light)] border border-white/10 rounded-lg shadow-xl shadow-black/40 overflow-hidden animate-fadeIn">
+                    <div className="animate-fadeIn absolute top-full right-0 mt-2 w-64 overflow-hidden rounded-lg border border-white/10 bg-[var(--color-surface-light)] shadow-xl shadow-black/40">
                         <div className="flex items-center gap-3 px-4 py-3">
                             {user?.avatar ? (
-                                <img src={user.avatar} alt="" className="w-10 h-10 rounded-full shrink-0" referrerPolicy="no-referrer" />
+                                <img
+                                    src={user.avatar}
+                                    alt=""
+                                    className="h-10 w-10 shrink-0 rounded-full"
+                                    referrerPolicy="no-referrer"
+                                />
                             ) : (
-                                <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-sm font-semibold bg-[var(--color-primary-500)] text-[var(--color-primary-contrast)]">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-500)] text-sm font-semibold text-[var(--color-primary-contrast)]">
                                     {initial}
                                 </div>
                             )}
                             <div className="min-w-0">
-                                <p className="text-sm font-semibold text-[var(--color-text)] truncate">{displayName}</p>
-                                {displayEmail && <p className="text-xs text-[var(--color-text)]/60 truncate">{displayEmail}</p>}
+                                <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+                                    {displayName}
+                                </p>
+                                {displayEmail && (
+                                    <p className="truncate text-xs text-[var(--color-text)]/60">
+                                        {displayEmail}
+                                    </p>
+                                )}
                                 {guest && !user && (
                                     <p className="text-xs text-[var(--color-text)]/40">
-                                        Expires {new Date(guest.expiresAt).toLocaleString()}
+                                        Expires{' '}
+                                        {new Date(
+                                            guest.expiresAt,
+                                        ).toLocaleString()}
                                     </p>
                                 )}
                             </div>
@@ -89,10 +135,20 @@ export function ProfileMenu() {
                         <div className="border-t border-white/10">
                             <button
                                 onClick={handleLogout}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 hover:bg-white/5 transition-colors cursor-pointer"
+                                className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 transition-colors hover:bg-white/5"
                             >
-                                <svg className="w-4 h-4 text-[var(--color-text)]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                <svg
+                                    className="h-4 w-4 text-[var(--color-text)]/60"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                    />
                                 </svg>
                                 Sign out
                             </button>

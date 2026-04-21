@@ -1,5 +1,10 @@
-import { deriveFileKey, deriveChunkIv, FILE_CHUNK_SIZE, GCM_TAG_LENGTH } from '@/lib/crypto';
 import { apiPostRaw } from '@/lib/api';
+import {
+    deriveChunkIv,
+    deriveFileKey,
+    FILE_CHUNK_SIZE,
+    GCM_TAG_LENGTH,
+} from '@/lib/crypto';
 import type { FileInfo } from '@/types';
 
 class ChunkedStreamReader {
@@ -36,7 +41,9 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
     anchor.href = url;
     anchor.download = filename;
     anchor.rel = 'noopener';
-    anchor.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: false }));
+    anchor.dispatchEvent(
+        new MouseEvent('click', { bubbles: false, cancelable: false }),
+    );
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
@@ -48,10 +55,13 @@ export async function downloadAndDecrypt(
 ): Promise<void> {
     const response = await apiPostRaw(`/api/files/${fileId}/download`);
 
-    const isClientEncrypted = response.headers.get('X-Client-Encrypted') === '1';
+    const isClientEncrypted =
+        response.headers.get('X-Client-Encrypted') === '1';
     const encryptionSalt = response.headers.get('X-Encryption-Salt');
     const clientIvHeader = response.headers.get('X-Client-Iv');
-    const originalMimeType = response.headers.get('X-Original-Mime-Type') ?? 'application/octet-stream';
+    const originalMimeType =
+        response.headers.get('X-Original-Mime-Type') ??
+        'application/octet-stream';
     const filename = fileInfo?.original_name ?? 'download';
 
     if (!isClientEncrypted || !encryptionSalt || !clientIvHeader) {
@@ -61,12 +71,14 @@ export async function downloadAndDecrypt(
     }
 
     const cryptoKey = await deriveFileKey(encryptionKey, encryptionSalt);
-    const baseIv = Uint8Array.from(atob(clientIvHeader), (char) => char.charCodeAt(0));
+    const baseIv = Uint8Array.from(atob(clientIvHeader), (char) =>
+        char.charCodeAt(0),
+    );
 
     const plaintextSizeHeader = response.headers.get('X-Plaintext-Size');
     const plaintextSize = plaintextSizeHeader
         ? parseInt(plaintextSizeHeader, 10)
-        : fileInfo?.size ?? 0;
+        : (fileInfo?.size ?? 0);
     const fullChunks = Math.floor(plaintextSize / FILE_CHUNK_SIZE);
     const remainder = plaintextSize % FILE_CHUNK_SIZE;
     const totalChunks = fullChunks + (remainder > 0 ? 1 : 0);
@@ -76,7 +88,9 @@ export async function downloadAndDecrypt(
 
     for (let idx = 0; idx < totalChunks; idx++) {
         const isLast = idx === totalChunks - 1 && remainder > 0;
-        const needed = isLast ? remainder + GCM_TAG_LENGTH : FILE_CHUNK_SIZE + GCM_TAG_LENGTH;
+        const needed = isLast
+            ? remainder + GCM_TAG_LENGTH
+            : FILE_CHUNK_SIZE + GCM_TAG_LENGTH;
         const chunk = await reader.pull(needed);
         if (chunk.length === 0) break;
 
@@ -93,6 +107,8 @@ export async function downloadAndDecrypt(
         }
     }
 
-    const finalBlob = new Blob(decryptedParts as BlobPart[], { type: originalMimeType });
+    const finalBlob = new Blob(decryptedParts as BlobPart[], {
+        type: originalMimeType,
+    });
     triggerBlobDownload(finalBlob, filename);
 }

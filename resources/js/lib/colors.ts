@@ -39,8 +39,10 @@ function hexToHsl(hex: string): [number, number, number] {
 
     if (max !== min) {
         const delta = max - min;
-        saturation = lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
-        if (max === red) hue = ((green - blue) / delta + (green < blue ? 6 : 0)) / 6;
+        saturation =
+            lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+        if (max === red)
+            hue = ((green - blue) / delta + (green < blue ? 6 : 0)) / 6;
         else if (max === green) hue = ((blue - red) / delta + 2) / 6;
         else hue = ((red - green) / delta + 4) / 6;
     }
@@ -55,15 +57,33 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
     const x = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
     const match = lgt - chroma / 2;
 
-    let red = 0, green = 0, blue = 0;
-    if (hue < 60) { red = chroma; green = x; }
-    else if (hue < 120) { red = x; green = chroma; }
-    else if (hue < 180) { green = chroma; blue = x; }
-    else if (hue < 240) { green = x; blue = chroma; }
-    else if (hue < 300) { red = x; blue = chroma; }
-    else { red = chroma; blue = x; }
+    let red = 0,
+        green = 0,
+        blue = 0;
+    if (hue < 60) {
+        red = chroma;
+        green = x;
+    } else if (hue < 120) {
+        red = x;
+        green = chroma;
+    } else if (hue < 180) {
+        green = chroma;
+        blue = x;
+    } else if (hue < 240) {
+        green = x;
+        blue = chroma;
+    } else if (hue < 300) {
+        red = x;
+        blue = chroma;
+    } else {
+        red = chroma;
+        blue = x;
+    }
 
-    const toHex = (value: number) => Math.round((value + match) * 255).toString(16).padStart(2, '0');
+    const toHex = (value: number) =>
+        Math.round((value + match) * 255)
+            .toString(16)
+            .padStart(2, '0');
     return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
 }
 
@@ -80,7 +100,8 @@ function lighten(hex: string, amount: number): string {
     const red = parseInt(hex.slice(1, 3), 16);
     const green = parseInt(hex.slice(3, 5), 16);
     const blue = parseInt(hex.slice(5, 7), 16);
-    const mix = (channel: number) => Math.round(channel + (255 - channel) * amount);
+    const mix = (channel: number) =>
+        Math.round(channel + (255 - channel) * amount);
     const toHex = (value: number) => value.toString(16).padStart(2, '0');
     return `#${toHex(mix(red))}${toHex(mix(green))}${toHex(mix(blue))}`;
 }
@@ -126,14 +147,34 @@ function resolveShades(color: string, fallback: ColorShades): ColorShades {
     }
     const entry = palette[color];
     if (entry) {
-        return { 400: entry[400], 500: entry[500], 600: entry[600], 950: entry[950] };
+        return {
+            400: entry[400],
+            500: entry[500],
+            600: entry[600],
+            950: entry[950],
+        };
     }
     return fallback;
 }
 
-const defaultPrimary: ColorShades = { 400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 950: '#3b0764' };
-const defaultSecondary: ColorShades = { 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 950: '#1e1b4b' };
-const defaultAccent: ColorShades = { 400: '#e879f9', 500: '#d946ef', 600: '#c026d3', 950: '#4a044e' };
+const defaultPrimary: ColorShades = {
+    400: '#c084fc',
+    500: '#a855f7',
+    600: '#9333ea',
+    950: '#3b0764',
+};
+const defaultSecondary: ColorShades = {
+    400: '#818cf8',
+    500: '#6366f1',
+    600: '#4f46e5',
+    950: '#1e1b4b',
+};
+const defaultAccent: ColorShades = {
+    400: '#e879f9',
+    500: '#d946ef',
+    600: '#c026d3',
+    950: '#4a044e',
+};
 
 /**
  * Resolve a color value to hex. Accepts:
@@ -173,11 +214,19 @@ export function applyBrandingColors(
     root.style.setProperty('--color-surface', surfaceHex);
     root.style.setProperty('--color-surface-light', lighten(surfaceHex, 0.08));
 
-    root.style.setProperty('--color-text', resolveHex(foreground, 400, '#e2e8f0'));
+    root.style.setProperty(
+        '--color-text',
+        resolveHex(foreground, 400, '#e2e8f0'),
+    );
 
-    root.style.setProperty('--color-primary-contrast', luminance(primaryShades[500]) > 0.35 ? '#1a1a1a' : '#ffffff');
+    root.style.setProperty(
+        '--color-primary-contrast',
+        luminance(primaryShades[500]) > 0.35 ? '#1a1a1a' : '#ffffff',
+    );
 
-    const actionBase = action ? resolveHex(action, 600, primaryShades[600]) : primaryShades[600];
+    const actionBase = action
+        ? resolveHex(action, 600, primaryShades[600])
+        : primaryShades[600];
     const actionHover = action ? lighten(actionBase, 0.15) : primaryShades[500];
     const actionContrast = luminance(actionBase) > 0.35 ? '#1a1a1a' : '#ffffff';
     root.style.setProperty('--color-button', actionBase);

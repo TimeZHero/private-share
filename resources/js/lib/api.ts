@@ -21,7 +21,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
         if (contentType.includes('application/json')) {
             data = await response.json();
         }
-        const message = (data?.message as string) ?? (data?.error as string) ?? `Request failed (${response.status})`;
+        const message =
+            (data?.message as string) ??
+            (data?.error as string) ??
+            `Request failed (${response.status})`;
         throw new ApiError(message, response.status, data);
     }
     return response.json();
@@ -35,7 +38,10 @@ export async function apiGet<T>(url: string): Promise<T> {
     return handleResponse<T>(response);
 }
 
-export async function apiPost<T>(url: string, body?: Record<string, unknown>): Promise<T> {
+export async function apiPost<T>(
+    url: string,
+    body?: Record<string, unknown>,
+): Promise<T> {
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -48,7 +54,10 @@ export async function apiPost<T>(url: string, body?: Record<string, unknown>): P
     return handleResponse<T>(response);
 }
 
-export async function apiPostFormData<T>(url: string, formData: FormData): Promise<T> {
+export async function apiPostFormData<T>(
+    url: string,
+    formData: FormData,
+): Promise<T> {
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -78,7 +87,10 @@ export async function apiPostRaw(url: string): Promise<Response> {
                 data,
             );
         }
-        throw new ApiError(`Request failed (${response.status})`, response.status);
+        throw new ApiError(
+            `Request failed (${response.status})`,
+            response.status,
+        );
     }
     return response;
 }

@@ -5,10 +5,11 @@ const FILE_CHUNK_SIZE = 8 * 1024 * 1024;
 const GCM_TAG_LENGTH = 16;
 const ENCRYPTED_CHUNK_SIZE = FILE_CHUNK_SIZE + GCM_TAG_LENGTH;
 
-export { FILE_CHUNK_SIZE, GCM_TAG_LENGTH, ENCRYPTED_CHUNK_SIZE };
+export { ENCRYPTED_CHUNK_SIZE, FILE_CHUNK_SIZE, GCM_TAG_LENGTH };
 
 export function generateKey(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let key = '';
     for (let index = 0; index < 8; index++) {
         key += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -29,7 +30,12 @@ export async function deriveKeyWithSalt(
         ['deriveKey'],
     );
     return crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt: new Uint8Array(salt.buffer) as BufferSource, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+        {
+            name: 'PBKDF2',
+            salt: new Uint8Array(salt.buffer) as BufferSource,
+            iterations: PBKDF2_ITERATIONS,
+            hash: 'SHA-256',
+        },
         keyMaterial,
         { name: 'AES-GCM', length: 256 },
         false,
@@ -37,7 +43,10 @@ export async function deriveKeyWithSalt(
     );
 }
 
-export async function encryptContent(content: string, password: string): Promise<string> {
+export async function encryptContent(
+    content: string,
+    password: string,
+): Promise<string> {
     const encoder = new TextEncoder();
     const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
     const key = await deriveKeyWithSalt(password, salt);
@@ -47,25 +56,39 @@ export async function encryptContent(content: string, password: string): Promise
         key,
         encoder.encode(content),
     );
-    const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength);
+    const combined = new Uint8Array(
+        salt.length + iv.length + encrypted.byteLength,
+    );
     combined.set(salt);
     combined.set(iv, salt.length);
     combined.set(new Uint8Array(encrypted), salt.length + iv.length);
     return btoa(String.fromCharCode(...combined));
 }
 
-export async function decryptContent(encryptedBase64: string, password: string): Promise<string> {
+export async function decryptContent(
+    encryptedBase64: string,
+    password: string,
+): Promise<string> {
     const decoder = new TextDecoder();
-    const combined = Uint8Array.from(atob(encryptedBase64), (char) => char.charCodeAt(0));
+    const combined = Uint8Array.from(atob(encryptedBase64), (char) =>
+        char.charCodeAt(0),
+    );
     const salt = combined.slice(0, SALT_LENGTH);
     const iv = combined.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
     const encrypted = combined.slice(SALT_LENGTH + IV_LENGTH);
     const key = await deriveKeyWithSalt(password, salt);
-    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, encrypted);
+    const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        encrypted,
+    );
     return decoder.decode(decrypted);
 }
 
-export function deriveChunkIv(baseIv: Uint8Array, chunkIndex: number): Uint8Array {
+export function deriveChunkIv(
+    baseIv: Uint8Array,
+    chunkIndex: number,
+): Uint8Array {
     const indexBytes = new Uint8Array(12);
     const view = new DataView(indexBytes.buffer);
     view.setUint32(0, chunkIndex, true);
@@ -76,8 +99,13 @@ export function deriveChunkIv(baseIv: Uint8Array, chunkIndex: number): Uint8Arra
     return derived;
 }
 
-export async function deriveFileKey(keyString: string, saltBase64: string): Promise<CryptoKey> {
-    const salt = Uint8Array.from(atob(saltBase64), (char) => char.charCodeAt(0));
+export async function deriveFileKey(
+    keyString: string,
+    saltBase64: string,
+): Promise<CryptoKey> {
+    const salt = Uint8Array.from(atob(saltBase64), (char) =>
+        char.charCodeAt(0),
+    );
     const encoder = new TextEncoder();
     const keyMaterial = await crypto.subtle.importKey(
         'raw',
@@ -87,7 +115,12 @@ export async function deriveFileKey(keyString: string, saltBase64: string): Prom
         ['deriveKey'],
     );
     return crypto.subtle.deriveKey(
-        { name: 'PBKDF2', salt: new Uint8Array(salt.buffer) as BufferSource, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+        {
+            name: 'PBKDF2',
+            salt: new Uint8Array(salt.buffer) as BufferSource,
+            iterations: PBKDF2_ITERATIONS,
+            hash: 'SHA-256',
+        },
         keyMaterial,
         { name: 'AES-GCM', length: 256 },
         false,
@@ -102,7 +135,11 @@ export async function encryptChunk(
     chunkIndex: number,
 ): Promise<ArrayBuffer> {
     const iv = deriveChunkIv(baseIv, chunkIndex);
-    return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource, tagLength: 128 }, cryptoKey, plaintext);
+    return crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource, tagLength: 128 },
+        cryptoKey,
+        plaintext,
+    );
 }
 
 export async function decryptChunk(
@@ -112,5 +149,9 @@ export async function decryptChunk(
     chunkIndex: number,
 ): Promise<ArrayBuffer> {
     const iv = deriveChunkIv(baseIv, chunkIndex);
-    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as BufferSource, tagLength: 128 }, cryptoKey, ciphertext);
+    return crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv as BufferSource, tagLength: 128 },
+        cryptoKey,
+        ciphertext,
+    );
 }

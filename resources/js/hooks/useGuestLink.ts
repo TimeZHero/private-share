@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
 import { createAndCopyGuestLink } from '@/services/guestLink';
+import { useCallback, useState } from 'react';
 
 interface UseGuestLinkReturn {
     creating: boolean;
@@ -22,7 +22,11 @@ export function useGuestLink(): UseGuestLinkReturn {
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to create guest link');
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : 'Failed to create guest link',
+            );
             setTimeout(() => setError(null), 2500);
         } finally {
             setCreating(false);

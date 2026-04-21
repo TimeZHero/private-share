@@ -1,5 +1,5 @@
-import { type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'default' | 'sm';
@@ -18,8 +18,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     secondary:
         'bg-[var(--color-surface-light)] hover:brightness-125 text-[var(--color-text)]/80 hover:text-[var(--color-text)] border border-white/10 hover:border-white/20',
     ghost: 'text-[var(--color-text)]/60 hover:text-[var(--color-text)] hover:bg-[var(--color-surface-light)]',
-    danger:
-        'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/25',
+    danger: 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/25',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -27,9 +26,17 @@ const sizeClasses: Record<ButtonSize, string> = {
     sm: 'px-4 py-1.5 text-sm rounded-lg',
 };
 
-export function Button({ variant = 'primary', size = 'default', children, className, as, href, ...props }: ButtonProps) {
+export function Button({
+    variant = 'primary',
+    size = 'default',
+    children,
+    className,
+    as,
+    href,
+    ...props
+}: ButtonProps) {
     const classes = cn(
-        'inline-flex items-center justify-center gap-2 font-bold transition-[color,background-color,border-color,box-shadow,opacity] duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex cursor-pointer items-center justify-center gap-2 font-bold transition-[color,background-color,border-color,box-shadow,opacity] duration-200 disabled:cursor-not-allowed disabled:opacity-50',
         sizeClasses[size],
         variantClasses[variant],
         className,

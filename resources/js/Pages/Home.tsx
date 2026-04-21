@@ -1,31 +1,42 @@
-import { AppLayout } from '@/components/layouts/AppLayout';
 import { Logo } from '@/components/atoms/Logo';
+import { AppLayout } from '@/components/layouts/AppLayout';
 import { InfoStrip } from '@/components/molecules/InfoStrip';
 import { SecretEditor } from '@/components/organisms/SecretEditor';
-import { usePage } from '@inertiajs/react';
 import type { HomePageProps, SharedPageProps } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 export default function Home({ fileUploadsEnabled, maxSizeGb }: HomePageProps) {
     const { appName } = usePage<SharedPageProps>().props;
 
     return (
         <AppLayout>
-            <div className="text-center mb-8">
+            <div className="mb-8 text-center">
                 <Logo />
-                <h1 className="text-3xl font-semibold tracking-tight mb-1">
+                <h1 className="mb-1 text-3xl font-semibold tracking-tight">
                     {appName}
                 </h1>
-                <p className="text-[var(--color-text)]/60 text-sm">Share secrets securely with end-to-end encryption</p>
+                <p className="text-sm text-[var(--color-text)]/60">
+                    Share secrets securely with end-to-end encryption
+                </p>
                 <InfoStrip
                     items={[
-                        { icon: 'eye', text: 'Secrets are deleted after being viewed once' },
-                        { icon: 'clock', text: 'Unretrieved secrets auto-expire after 30 days' },
+                        {
+                            icon: 'eye',
+                            text: 'Secrets are deleted after being viewed once',
+                        },
+                        {
+                            icon: 'clock',
+                            text: 'Unretrieved secrets auto-expire after 30 days',
+                        },
                     ]}
                     className="mt-4"
                 />
             </div>
 
-            <SecretEditor fileUploadsEnabled={fileUploadsEnabled} maxSizeGb={maxSizeGb} />
+            <SecretEditor
+                fileUploadsEnabled={fileUploadsEnabled}
+                maxSizeGb={maxSizeGb}
+            />
         </AppLayout>
     );
 }
