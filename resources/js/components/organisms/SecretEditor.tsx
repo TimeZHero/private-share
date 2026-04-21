@@ -34,8 +34,6 @@ export function SecretEditor({ fileUploadsEnabled, maxSizeGb }: SecretEditorProp
 
     const { state, result, error, clearError, share, reset: resetSharing } = useSecretSharing();
 
-    const activeTextareaRef = markdownEnabled ? markdownTextareaRef : plainTextareaRef;
-
     const handleMarkdownToggle = useCallback(() => {
         setMarkdownEnabled((prev) => !prev);
     }, []);
