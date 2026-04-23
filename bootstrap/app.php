@@ -8,6 +8,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Laravel\Pennant\Feature;
@@ -22,10 +23,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        if (app()->environment('local')) {
-            $middleware->trustProxies(at: '*');
-        }
-
         $middleware->encryptCookies(except: ['appearance']);
 
         $middleware->web(append: [
@@ -93,4 +90,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->toResponse($request)
                 ->setStatusCode($statusCode);
         });
-    })->create();
+    })
+    ->booted(function (Application $app) {
+        if ($app->isLocal()) {
+            TrustProxies::at('*');
+        }
+    })
+    ->create();
