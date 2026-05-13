@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SharedFileController extends Controller
 {
@@ -161,12 +161,11 @@ class SharedFileController extends Controller
     /**
      * Serve the client-encrypted file to the browser, then burn.
      *
-     * Uses BinaryFileResponse for the local disk (proper Content-Length,
-     * no Transfer-Encoding: chunked, supports range requests). The file
-     * on disk is already client-side encrypted — the server just passes
-     * bytes through without touching the content.
+     * Streams the file from any disk (local or S3) with explicit
+     * Content-Length. The server never sees plaintext — it just
+     * passes encrypted bytes through.
      */
-    public function download(SharedFile $sharedFile): BinaryFileResponse|JsonResponse
+    public function download(SharedFile $sharedFile): StreamedResponse|JsonResponse
     {
         $disk = Storage::disk(config('features.file_disk'));
 
@@ -177,8 +176,6 @@ class SharedFileController extends Controller
             ], 404);
         }
 
-        $fullPath = $disk->path($sharedFile->storage_path);
-
         $storagePath = $sharedFile->storage_path;
         $sharedFileToDelete = $sharedFile;
         app()->terminating(function () use ($sharedFileToDelete, $disk, $storagePath): void {
@@ -186,8 +183,15 @@ class SharedFileController extends Controller
             $sharedFileToDelete->delete();
         });
 
-        return response()->file($fullPath, [
+        return response()->stream(function () use ($disk, $storagePath): void {
+            $stream = $disk->readStream($storagePath);
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, [
             'Content-Type' => 'application/octet-stream',
+            'Content-Length' => $disk->size($sharedFile->storage_path),
             'Content-Disposition' => 'attachment; filename="'.addslashes($sharedFile->original_name).'"',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',
