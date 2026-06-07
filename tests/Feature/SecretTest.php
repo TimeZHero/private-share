@@ -29,19 +29,6 @@ test('can create a secret via API', function () {
     $response->assertJson(['id' => $secret->id]);
 });
 
-test('can create a secret with confirmation required', function () {
-    $response = $this->postJson('/api/secrets', [
-        'content' => 'encrypted-content-here',
-        'requires_confirmation' => true,
-    ]);
-
-    $response->assertSuccessful();
-
-    $secret = Secret::first();
-    expect($secret)->not->toBeNull();
-    expect($secret->requires_confirmation)->toBeTrue();
-});
-
 test('can create a secret with markdown enabled', function () {
     $response = $this->postJson('/api/secrets', [
         'content' => 'encrypted-content-here',
@@ -122,20 +109,27 @@ test('can check secret requirements', function () {
 
     $response->assertSuccessful();
     $response->assertJson([
-        'requires_confirmation' => false,
         'requires_password' => false,
         'markdown_enabled' => false,
     ]);
 });
 
+test('check response does not expose requires_confirmation', function () {
+    $secret = Secret::factory()->create();
+
+    $response = $this->getJson("/api/secrets/{$secret->id}/check");
+
+    $response->assertSuccessful();
+    expect($response->json())->not->toHaveKey('requires_confirmation');
+});
+
 test('check returns correct flags for protected secret', function () {
-    $secret = Secret::factory()->requiresConfirmation()->withPassword()->create();
+    $secret = Secret::factory()->withPassword()->create();
 
     $response = $this->getJson("/api/secrets/{$secret->id}/check");
 
     $response->assertSuccessful();
     $response->assertJson([
-        'requires_confirmation' => true,
         'requires_password' => true,
     ]);
 });

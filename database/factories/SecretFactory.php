@@ -19,20 +19,9 @@ class SecretFactory extends Factory
     {
         return [
             'content' => fake()->paragraphs(3, true),
-            'requires_confirmation' => false,
             'password' => null,
             'markdown_enabled' => false,
         ];
-    }
-
-    /**
-     * Indicate that the secret requires confirmation.
-     */
-    public function requiresConfirmation(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'requires_confirmation' => true,
-        ]);
     }
 
     /**

@@ -16,7 +16,6 @@ class SecretController extends Controller
 
         $validated = $request->validate([
             'content' => ['nullable', 'string', 'max:1048576'],
-            'requires_confirmation' => ['sometimes', 'boolean'],
             'password' => $hasFile
                 ? ['required', 'string', 'min:4', 'max:255']
                 : ['sometimes', 'nullable', 'string', 'min:4', 'max:255'],
@@ -44,7 +43,6 @@ class SecretController extends Controller
     public function check(Secret $secret): JsonResponse
     {
         $response = [
-            'requires_confirmation' => $secret->requires_confirmation,
             'requires_password' => $secret->isPasswordProtected(),
             'markdown_enabled' => $secret->markdown_enabled,
             'has_file' => $secret->hasFile(),
