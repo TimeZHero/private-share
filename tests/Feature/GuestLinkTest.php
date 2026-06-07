@@ -25,7 +25,9 @@ describe('Guest Link Creation (API)', function () {
         $response = $this->actingAs($user)->postJson('/api/guest-links');
 
         $response->assertSuccessful()
-            ->assertJsonStructure(['id', 'url', 'expires_at']);
+            ->assertJsonStructure(['id', 'url', 'expires_at', 'ttl_hours']);
+
+        expect($response->json('ttl_hours'))->toBe(24);
 
         $this->assertDatabaseHas('guest_links', [
             'id' => $response->json('id'),

@@ -27,6 +27,7 @@ class GuestLinkController extends Controller
             'id' => $guestLink->id,
             'url' => $signedUrl,
             'expires_at' => $expiresAt->toIso8601String(),
+            'ttl_hours' => $ttlHours,
         ]);
     }
 
