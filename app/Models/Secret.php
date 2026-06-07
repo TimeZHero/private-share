@@ -33,7 +33,6 @@ class Secret extends Model
      */
     protected $fillable = [
         'content',
-        'requires_confirmation',
         'password',
         'markdown_enabled',
         'shared_file_id',
@@ -56,7 +55,6 @@ class Secret extends Model
     protected function casts(): array
     {
         return [
-            'requires_confirmation' => 'boolean',
             'password' => 'hashed',
             'markdown_enabled' => 'boolean',
         ];

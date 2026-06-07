@@ -7,7 +7,6 @@ interface ShareSecretParams {
     fileEncryptionKey: string | null;
     password: string;
     markdownEnabled: boolean;
-    requiresConfirmation: boolean;
 }
 
 export interface ShareResult {
@@ -15,7 +14,6 @@ export interface ShareResult {
     hasFile: boolean;
     hasText: boolean;
     features: {
-        confirmation: boolean;
         password: boolean;
         markdown: boolean;
     };
@@ -52,7 +50,6 @@ export async function shareSecret(
         fileEncryptionKey,
         password,
         markdownEnabled,
-        requiresConfirmation,
     } = params;
 
     const hasFile = !!uploadedFileId;
@@ -70,7 +67,6 @@ export async function shareSecret(
 
     const payload: Record<string, unknown> = {
         content: encryptedContent,
-        requires_confirmation: requiresConfirmation,
         markdown_enabled: markdownEnabled,
     };
     if (uploadedFileId) payload.shared_file_id = uploadedFileId;
@@ -88,7 +84,6 @@ export async function shareSecret(
         hasFile,
         hasText,
         features: {
-            confirmation: requiresConfirmation,
             password: !!password,
             markdown: hasText && markdownEnabled,
         },

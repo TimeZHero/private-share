@@ -23,7 +23,6 @@ export function SecretEditor({
 }: SecretEditorProps) {
     const [content, setContent] = useState('');
     const [markdownEnabled, setMarkdownEnabled] = useState(false);
-    const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [enablePassword, setEnablePassword] = useState(false);
     const [password, setPassword] = useState('');
     const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
@@ -68,7 +67,6 @@ export function SecretEditor({
             password,
             enablePassword,
             markdownEnabled,
-            requiresConfirmation,
             fileUploadPending,
         });
     }, [
@@ -78,7 +76,6 @@ export function SecretEditor({
         password,
         enablePassword,
         markdownEnabled,
-        requiresConfirmation,
         fileUploadPending,
         share,
     ]);
@@ -86,7 +83,6 @@ export function SecretEditor({
     const handleReset = useCallback(() => {
         setContent('');
         setMarkdownEnabled(false);
-        setRequiresConfirmation(false);
         setEnablePassword(false);
         setPassword('');
         setUploadedFileId(null);
@@ -209,9 +205,7 @@ export function SecretEditor({
                     This secret will auto-expire in 30 days if not viewed
                 </p>
 
-                {(result.features.confirmation ||
-                    result.features.password ||
-                    result.features.markdown) && (
+                {(result.features.password || result.features.markdown) && (
                     <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm">
                         {result.features.markdown && (
                             <div className="flex items-center gap-2 text-[var(--color-text)]/80">
@@ -229,24 +223,6 @@ export function SecretEditor({
                                     />
                                 </svg>
                                 <span>Markdown enabled</span>
-                            </div>
-                        )}
-                        {result.features.confirmation && (
-                            <div className="flex items-center gap-2 text-[var(--color-text)]/80">
-                                <svg
-                                    className="h-4 w-4 text-[var(--color-button)]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M5 13l4 4L19 7"
-                                    />
-                                </svg>
-                                <span>Confirmation required</span>
                             </div>
                         )}
                         {result.features.password && (
@@ -397,15 +373,6 @@ export function SecretEditor({
                         title="Enable markdown formatting and preview"
                         checked={markdownEnabled}
                         onChange={handleMarkdownToggle}
-                    />
-                    <Toggle
-                        id="requires-confirmation"
-                        label="Require confirmation"
-                        title="Recipient must confirm before viewing"
-                        checked={requiresConfirmation}
-                        onChange={() =>
-                            setRequiresConfirmation((prev) => !prev)
-                        }
                     />
                     <Toggle
                         id="enable-password"

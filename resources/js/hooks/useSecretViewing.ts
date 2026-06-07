@@ -105,25 +105,15 @@ export function useSecretViewing(): UseSecretViewingReturn {
                 const result = await checkRequirements(secretId);
                 checkDataRef.current = result;
 
-                if (result.requires_confirmation || result.requires_password) {
-                    setRequiresPassword(result.requires_password);
-                    setPasswordError(null);
-                    setData((prev) => ({
-                        ...prev,
-                        markdownEnabled: result.markdown_enabled,
-                        hasFile: result.has_file,
-                        fileInfo: result.file ?? null,
-                    }));
-                    setViewState('confirmation');
-                } else {
-                    const keyResult = getEncryptionKeyFromHash();
-                    if (!keyResult.valid) {
-                        showError(keyResult.error);
-                        return;
-                    }
-                    savedKeyRef.current = keyResult.key;
-                    await doRetrieveAndDecrypt(secretId);
-                }
+                setRequiresPassword(result.requires_password);
+                setPasswordError(null);
+                setData((prev) => ({
+                    ...prev,
+                    markdownEnabled: result.markdown_enabled,
+                    hasFile: result.has_file,
+                    fileInfo: result.file ?? null,
+                }));
+                setViewState('confirmation');
             } catch (error) {
                 if (isNotFoundError(error)) {
                     showError(

@@ -39,8 +39,7 @@ describe('Secret Creation E2E', function () {
     it('shows security options', function () {
         $page = visit('/');
 
-        $page->assertSee('Require confirmation')
-            ->assertSee('Require password');
+        $page->assertSee('Require password');
     });
 
     it('creates a secret and shows success view with link', function () {
@@ -91,7 +90,7 @@ describe('Secret Retrieval E2E', function () {
     });
 
     it('loads the secret page for a valid secret', function () {
-        $secret = Secret::factory()->requiresConfirmation()->create();
+        $secret = Secret::factory()->create();
 
         $page = visit("/{$secret->id}");
 
@@ -104,7 +103,9 @@ describe('Secret Retrieval E2E', function () {
 
         $page = visit("/{$secret->id}");
 
-        $page->waitForText('Decryption Failed');
+        $page->waitForText('View Secret')
+            ->click('View Secret')
+            ->waitForText('Decryption Failed');
     });
 });
 
@@ -122,7 +123,7 @@ describe('Security - Console Monitoring', function () {
     });
 
     it('ensures secret page has no JavaScript errors', function () {
-        $secret = Secret::factory()->requiresConfirmation()->create();
+        $secret = Secret::factory()->create();
 
         $page = visit("/{$secret->id}");
 
@@ -139,7 +140,7 @@ describe('Smoke Tests', function () {
     });
 
     it('loads secret page without errors', function () {
-        $secret = Secret::factory()->requiresConfirmation()->create();
+        $secret = Secret::factory()->create();
 
         $page = visit("/{$secret->id}");
 

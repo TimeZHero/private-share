@@ -19,7 +19,6 @@ interface UseSecretSharingReturn {
         password: string;
         enablePassword: boolean;
         markdownEnabled: boolean;
-        requiresConfirmation: boolean;
         fileUploadPending: boolean;
     }) => Promise<void>;
     reset: () => void;
@@ -38,7 +37,6 @@ export function useSecretSharing(): UseSecretSharingReturn {
             password: string;
             enablePassword: boolean;
             markdownEnabled: boolean;
-            requiresConfirmation: boolean;
             fileUploadPending: boolean;
         }) => {
             const validationError = validateShareInputs(
@@ -66,7 +64,6 @@ export function useSecretSharing(): UseSecretSharingReturn {
                     fileEncryptionKey: params.fileEncryptionKey,
                     password: params.password,
                     markdownEnabled: params.markdownEnabled,
-                    requiresConfirmation: params.requiresConfirmation,
                 });
                 setResult(shareResult);
                 setState('done');

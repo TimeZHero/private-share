@@ -297,7 +297,6 @@ describe('Secret Lifecycle Security', function () {
         // Response should only contain metadata, not content
         $response->assertJsonMissing(['content']);
         $response->assertJsonStructure([
-            'requires_confirmation',
             'requires_password',
         ]);
     });
@@ -403,16 +402,6 @@ describe('Input Validation Security', function () {
         $response = $this->postJson('/api/secrets', ['content' => 12345]);
         $response->assertUnprocessable();
         $response->assertJsonValidationErrors('content');
-    });
-
-    test('requires_confirmation must be boolean', function () {
-        $response = $this->postJson('/api/secrets', [
-            'content' => 'test',
-            'requires_confirmation' => 'yes', // Invalid - should be boolean
-        ]);
-
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors('requires_confirmation');
     });
 
     test('XSS in content is stored as-is (client handles rendering)', function () {

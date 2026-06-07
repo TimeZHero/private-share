@@ -78,14 +78,6 @@ test('isPasswordProtected returns false when no password', function () {
     expect($secret->isPasswordProtected())->toBeFalse();
 });
 
-test('requires_confirmation is cast to boolean', function () {
-    $secretWithConfirmation = Secret::factory()->create(['requires_confirmation' => 1]);
-    $secretWithoutConfirmation = Secret::factory()->create(['requires_confirmation' => 0]);
-
-    expect($secretWithConfirmation->requires_confirmation)->toBeBool()->toBeTrue();
-    expect($secretWithoutConfirmation->requires_confirmation)->toBeBool()->toBeFalse();
-});
-
 test('password attribute is hidden in serialization', function () {
     $secret = Secret::factory()->withPassword('secret123')->create();
 
@@ -142,15 +134,6 @@ test('content is mass assignable', function () {
     ]);
 
     expect($secret->content)->toBe('test content');
-});
-
-test('requires_confirmation is mass assignable', function () {
-    $secret = Secret::create([
-        'content' => 'test',
-        'requires_confirmation' => true,
-    ]);
-
-    expect($secret->requires_confirmation)->toBeTrue();
 });
 
 test('password is mass assignable', function () {

@@ -313,7 +313,6 @@ test('check endpoint returns file info for secret with file', function () {
     $response->assertSuccessful();
     $response->assertJson([
         'has_file' => true,
-        'requires_confirmation' => false,
         'requires_password' => true,
     ]);
     $response->assertJsonStructure(['file' => ['original_name', 'size', 'formatted_size', 'mime_type', 'client_encrypted', 'encryption_salt', 'client_iv']]);
