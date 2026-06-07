@@ -170,8 +170,8 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
                         View Secret?
                     </h1>
                     <p className="mx-auto max-w-md text-[var(--color-text)]/60">
-                        Someone has shared a secret with you. Once you view it,
-                        the secret will be permanently deleted.
+                        Once you view it, the secret will be permanently
+                        deleted.
                     </p>
                 </div>
 

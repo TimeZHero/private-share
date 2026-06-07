@@ -91,7 +91,6 @@ export interface FileInfo {
 }
 
 export interface SecretCheckResponse {
-    requires_confirmation: boolean;
     requires_password: boolean;
     markdown_enabled: boolean;
     has_file: boolean;
