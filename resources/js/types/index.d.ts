@@ -28,9 +28,18 @@ export interface Features {
     fileUploads: boolean;
 }
 
+export type FlashToastType = 'success' | 'info' | 'warning' | 'error';
+
+export interface FlashToast {
+    type: FlashToastType;
+    message: string;
+    description?: string;
+}
+
 export interface FlashMessages {
     error: string | null;
     success: string | null;
+    toast?: FlashToast | null;
 }
 
 export interface GuestSession {
