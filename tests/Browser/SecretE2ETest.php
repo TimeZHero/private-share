@@ -27,13 +27,32 @@ describe('Secret Creation E2E', function () {
             ->assertSee('Key Never Leaves Browser');
     });
 
+    it('shows a plain and markdown mode switch by default', function () {
+        $page = visit('/');
+
+        $page->assertSee('Plain')
+            ->assertSee('Markdown')
+            ->assertDontSee('Editor')
+            ->assertDontSee('Preview');
+    });
+
     it('displays markdown editor and preview when markdown is enabled', function () {
         $page = visit('/');
 
-        $page->click('#enable-markdown ~ .toggle-switch-sm')
+        $page->click('Markdown')
             ->waitForText('Editor')
             ->assertSee('Editor')
             ->assertSee('Preview');
+    });
+
+    it('returns to a plain editor when markdown is switched off', function () {
+        $page = visit('/');
+
+        $page->click('Markdown')
+            ->waitForText('Editor')
+            ->click('Plain')
+            ->assertDontSee('Editor')
+            ->assertDontSee('Preview');
     });
 
     it('shows security options', function () {

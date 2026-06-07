@@ -293,12 +293,12 @@ export function SecretEditor({
 
     return (
         <>
-            {markdownEnabled && (
-                <MarkdownToolbar
-                    textareaRef={markdownTextareaRef}
-                    onContentChange={handleToolbarContentChange}
-                />
-            )}
+            <MarkdownToolbar
+                markdownEnabled={markdownEnabled}
+                onToggle={handleMarkdownToggle}
+                textareaRef={markdownTextareaRef}
+                onContentChange={handleToolbarContentChange}
+            />
 
             <div className="group relative mb-4">
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[var(--color-primary-600)] via-[var(--color-secondary-600)] to-[var(--color-primary-600)] opacity-40 blur-sm transition-opacity group-focus-within:opacity-60" />
@@ -367,13 +367,6 @@ export function SecretEditor({
 
             <div className="sticky bottom-0 z-30 flex flex-col items-stretch justify-between gap-4 rounded-xl border border-white/10 bg-[var(--color-surface-light)]/90 p-3 backdrop-blur-md sm:static sm:flex-row sm:items-center sm:backdrop-blur-sm">
                 <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                    <Toggle
-                        id="enable-markdown"
-                        label="Markdown"
-                        title="Enable markdown formatting and preview"
-                        checked={markdownEnabled}
-                        onChange={handleMarkdownToggle}
-                    />
                     <Toggle
                         id="enable-password"
                         label={

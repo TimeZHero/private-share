@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import {
     TOOLBAR_GROUPS,
     computeMarkdownInsertion,
@@ -6,11 +7,39 @@ import {
 import { useCallback, type ReactElement } from 'react';
 
 interface MarkdownToolbarProps {
+    markdownEnabled: boolean;
+    onToggle: () => void;
     textareaRef: React.RefObject<HTMLTextAreaElement | null>;
     onContentChange: (newText: string) => void;
 }
 
 const iconMap: Record<string, ReactElement> = {
+    markdown: (
+        <svg
+            className="h-4 w-4"
+            viewBox="0 0 208 128"
+            fill="currentColor"
+            aria-hidden="true"
+        >
+            <path d="M30 98V30h20l20 25 20-25h20v68H90V59L70 84 50 59v39z" />
+            <path d="M155 98l-30-33h20V30h20v35h20z" />
+        </svg>
+    ),
+    plaintext: (
+        <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h10"
+            />
+        </svg>
+    ),
     heading: (
         <>
             <svg
@@ -257,6 +286,8 @@ const iconMap: Record<string, ReactElement> = {
 };
 
 export function MarkdownToolbar({
+    markdownEnabled,
+    onToggle,
     textareaRef,
     onContentChange,
 }: MarkdownToolbarProps) {
@@ -287,38 +318,73 @@ export function MarkdownToolbar({
         [textareaRef, onContentChange],
     );
 
+    const modeButtonClass = (active: boolean) =>
+        cn(
+            'flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+            active
+                ? 'bg-[var(--color-button)] text-[var(--color-button-contrast)]'
+                : 'text-[var(--color-text)]/60 hover:text-[var(--color-text)]',
+        );
+
     return (
-        <div className="animate-fadeIn mb-2 flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-[var(--color-surface-light)]/60 p-2 backdrop-blur-sm">
-            {TOOLBAR_GROUPS.map((group, groupIndex) => (
-                <div key={groupIndex} className="contents">
-                    {groupIndex > 0 && (
-                        <div className="mx-1 h-5 w-px bg-white/10" />
-                    )}
-                    <div className="flex items-center gap-1">
-                        {group.map((action) => (
-                            <button
-                                key={action.type}
-                                type="button"
-                                onClick={() => handleAction(action.type)}
-                                className="toolbar-btn"
-                                title={
-                                    action.shortcut
-                                        ? `${action.label} (${action.shortcut})`
-                                        : action.label
-                                }
-                            >
-                                {iconMap[action.icon]}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ))}
-            <div className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
-            <div className="ml-auto hidden items-center gap-1 sm:flex">
-                <span className="text-xs text-[var(--color-text)]/40">
-                    Markdown enabled
-                </span>
+        <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-[var(--color-surface-light)]/60 p-2 backdrop-blur-sm">
+            <div
+                role="group"
+                aria-label="Editor mode"
+                className="inline-flex items-center gap-0.5 rounded-lg bg-[var(--color-surface)]/60 p-0.5"
+            >
+                <button
+                    type="button"
+                    onClick={() => markdownEnabled && onToggle()}
+                    aria-pressed={!markdownEnabled}
+                    className={modeButtonClass(!markdownEnabled)}
+                    title="Plain text editor"
+                >
+                    {iconMap.plaintext}
+                    Plain
+                </button>
+                <button
+                    id="enable-markdown"
+                    type="button"
+                    onClick={() => !markdownEnabled && onToggle()}
+                    aria-pressed={markdownEnabled}
+                    className={modeButtonClass(markdownEnabled)}
+                    title="Markdown formatting and live preview"
+                >
+                    {iconMap.markdown}
+                    Markdown
+                </button>
             </div>
+
+            {markdownEnabled && (
+                <>
+                    <div className="mx-1 hidden h-5 w-px bg-white/10 sm:block" />
+                    {TOOLBAR_GROUPS.map((group, groupIndex) => (
+                        <div key={groupIndex} className="contents">
+                            {groupIndex > 0 && (
+                                <div className="mx-1 h-5 w-px bg-white/10" />
+                            )}
+                            <div className="flex items-center gap-1">
+                                {group.map((action) => (
+                                    <button
+                                        key={action.type}
+                                        type="button"
+                                        onClick={() => handleAction(action.type)}
+                                        className="toolbar-btn"
+                                        title={
+                                            action.shortcut
+                                                ? `${action.label} (${action.shortcut})`
+                                                : action.label
+                                        }
+                                    >
+                                        {iconMap[action.icon]}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </>
+            )}
         </div>
     );
 }
