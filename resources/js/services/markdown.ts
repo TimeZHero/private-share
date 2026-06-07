@@ -34,7 +34,7 @@ export function computeMarkdownInsertion(
     type: MarkdownAction,
 ): InsertionResult {
     const selectedText = text.substring(selectionStart, selectionEnd);
-    let insertion = '';
+    let insertion: string;
     let selectRange: [number, number] | null = null;
     let cursorOffset = 0;
 

@@ -12,9 +12,8 @@
         "isolatedModules": true,
         "noEmit": true,
         "lib": ["DOM", "DOM.Iterable", "ESNext"],
-        "baseUrl": ".",
         "paths": {
-            "@/*": ["resources/js/*"]
+            "@/*": ["./resources/js/*"]
         }
     },
     "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx"],
