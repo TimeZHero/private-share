@@ -21,7 +21,7 @@ export function ErrorLayout({
         <AppLayout
             title={`${title} - Error`}
             maxWidth="max-w-2xl"
-            showTrustBadges={false}
+            showFooter={false}
         >
             <div className="flex min-h-[75vh] flex-col items-center justify-center">
                 <div className="mb-10 text-center">

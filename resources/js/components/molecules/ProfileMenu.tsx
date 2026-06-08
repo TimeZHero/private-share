@@ -1,4 +1,5 @@
 import { Button } from '@/components/atoms/Button';
+import { HowItWorksModal } from '@/components/organisms/HowItWorksModal';
 import { useGuestLink } from '@/hooks/useGuestLink';
 import type { SharedPageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
@@ -9,8 +10,14 @@ export function ProfileMenu() {
     const user = auth?.user;
     const guest = auth?.guest;
     const [open, setOpen] = useState(false);
+    const [infoOpen, setInfoOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { creating, create } = useGuestLink();
+
+    const openInfo = useCallback(() => {
+        setOpen(false);
+        setInfoOpen(true);
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -62,6 +69,7 @@ export function ProfileMenu() {
             <div className="relative">
                 <button
                     onClick={() => setOpen((prev) => !prev)}
+                    aria-label="Account menu"
                     className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
                 >
                     {user?.avatar ? (
@@ -114,6 +122,25 @@ export function ProfileMenu() {
                         </div>
                         <div className="border-t border-white/10">
                             <button
+                                onClick={openInfo}
+                                className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 transition-colors hover:bg-white/5"
+                            >
+                                <svg
+                                    className="h-4 w-4 text-[var(--color-text)]/60"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                                How it works
+                            </button>
+                            <button
                                 onClick={handleLogout}
                                 className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 transition-colors hover:bg-white/5"
                             >
@@ -136,6 +163,11 @@ export function ProfileMenu() {
                     </div>
                 )}
             </div>
+
+            <HowItWorksModal
+                open={infoOpen}
+                onClose={() => setInfoOpen(false)}
+            />
         </div>
     );
 }

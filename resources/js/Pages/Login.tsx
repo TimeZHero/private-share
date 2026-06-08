@@ -10,7 +10,7 @@ export default function Login({
     googleRedirectUrl,
 }: LoginPageProps) {
     return (
-        <AppLayout title="Sign In" maxWidth="max-w-sm" showTrustBadges={false}>
+        <AppLayout title="Sign In" maxWidth="max-w-sm" showFooter={false}>
             <div className="mb-8 text-center">
                 <Logo linked={false} />
                 <h1 className="mb-1 text-3xl font-semibold tracking-tight">

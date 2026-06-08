@@ -13,7 +13,7 @@ Built with Laravel and Tailwind CSS.
 - **Burn After Reading** — Secrets are automatically deleted once viewed
 - **Auto-Expiration** — Unread secrets expire after 30 days
 - **Password Protection** — Optional additional password layer
-- **Confirmation Required** — Optional "reveal" confirmation before decryption
+- **Confirmation Required** — Recipients always confirm with a click before a secret is revealed
 - **Markdown Support** — Write and preview formatted content
 
 ## How It Works

@@ -23,8 +23,8 @@ describe('Secret Creation E2E', function () {
         $page = visit('/');
 
         $page->assertSee('Share Secret')
-            ->assertSee('End-to-End Encrypted')
-            ->assertSee('Key Never Leaves Browser');
+            ->assertSee('Secrets are deleted after being viewed once')
+            ->assertSee('Unretrieved secrets auto-expire after 30 days');
     });
 
     it('shows a plain and markdown mode switch by default', function () {
@@ -114,7 +114,8 @@ describe('Secret Retrieval E2E', function () {
         $page = visit("/{$secret->id}");
 
         $page->waitForText('View Secret')
-            ->assertSee('View Secret');
+            ->assertSee('View Secret')
+            ->assertSee('Secrets are deleted after being viewed once');
     });
 
     it('shows decryption error when encryption key is missing from URL', function () {
