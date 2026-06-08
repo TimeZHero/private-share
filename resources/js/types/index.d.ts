@@ -54,6 +54,7 @@ export interface SharedPageProps {
     branding: Branding;
     features: Features;
     appName: string;
+    helpText: string | null;
     debug: boolean;
     flash: FlashMessages;
     [key: string]: unknown;

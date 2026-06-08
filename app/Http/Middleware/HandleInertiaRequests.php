@@ -50,6 +50,8 @@ class HandleInertiaRequests extends Middleware
 
             'appName' => config('app.name'),
 
+            'helpText' => config('support.help_text'),
+
             'debug' => app()->isLocal() && config('app.debug'),
 
             'flash' => [
