@@ -1,7 +1,6 @@
 import { apiPostRaw } from '@/lib/api';
 import {
-    deriveChunkIv,
-    deriveFileKey,
+    createFileDecryptionContext,
     FILE_CHUNK_SIZE,
     GCM_TAG_LENGTH,
 } from '@/lib/crypto';
@@ -70,9 +69,10 @@ export async function downloadAndDecrypt(
         return;
     }
 
-    const cryptoKey = await deriveFileKey(encryptionKey, encryptionSalt);
-    const baseIv = Uint8Array.from(atob(clientIvHeader), (char) =>
-        char.charCodeAt(0),
+    const context = await createFileDecryptionContext(
+        encryptionKey,
+        encryptionSalt,
+        clientIvHeader,
     );
 
     const plaintextSizeHeader = response.headers.get('X-Plaintext-Size');
@@ -94,12 +94,7 @@ export async function downloadAndDecrypt(
         const chunk = await reader.pull(needed);
         if (chunk.length === 0) break;
 
-        const iv = deriveChunkIv(baseIv, idx);
-        const plain = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv: iv as BufferSource, tagLength: 128 },
-            cryptoKey,
-            chunk as BufferSource,
-        );
+        const plain = await context.processChunk(chunk.buffer as ArrayBuffer, idx);
         decryptedParts.push(new Uint8Array(plain));
 
         if (onProgress && totalChunks > 1) {

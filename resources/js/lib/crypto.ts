@@ -155,3 +155,53 @@ export async function decryptChunk(
         ciphertext,
     );
 }
+
+export interface FileEncryptionContext {
+    encryptionKey: string;
+    encryptionSalt: string;
+    clientIv: string;
+    processChunk: (
+        plaintext: ArrayBuffer,
+        chunkIndex: number,
+    ) => Promise<ArrayBuffer>;
+}
+
+export async function createFileEncryptionContext(): Promise<FileEncryptionContext> {
+    const encryptionKey = generateKey();
+    const saltBytes = crypto.getRandomValues(new Uint8Array(SALT_LENGTH));
+    const encryptionSalt = btoa(String.fromCharCode(...saltBytes));
+    const baseIv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+    const clientIv = btoa(String.fromCharCode(...baseIv));
+    const cryptoKey = await deriveFileKey(encryptionKey, encryptionSalt);
+
+    return {
+        encryptionKey,
+        encryptionSalt,
+        clientIv,
+        processChunk: (plaintext, chunkIndex) =>
+            encryptChunk(cryptoKey, plaintext, baseIv, chunkIndex),
+    };
+}
+
+export interface FileDecryptionContext {
+    processChunk: (
+        ciphertext: ArrayBuffer,
+        chunkIndex: number,
+    ) => Promise<ArrayBuffer>;
+}
+
+export async function createFileDecryptionContext(
+    encryptionKey: string,
+    encryptionSalt: string,
+    clientIv: string,
+): Promise<FileDecryptionContext> {
+    const cryptoKey = await deriveFileKey(encryptionKey, encryptionSalt);
+    const baseIv = Uint8Array.from(atob(clientIv), (char) =>
+        char.charCodeAt(0),
+    );
+
+    return {
+        processChunk: (ciphertext, chunkIndex) =>
+            decryptChunk(cryptoKey, ciphertext, baseIv, chunkIndex),
+    };
+}

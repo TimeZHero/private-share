@@ -1,10 +1,5 @@
 import { apiPost, apiPostFormData } from '@/lib/api';
-import {
-    deriveFileKey,
-    encryptChunk,
-    FILE_CHUNK_SIZE,
-    generateKey,
-} from '@/lib/crypto';
+import { createFileEncryptionContext, FILE_CHUNK_SIZE } from '@/lib/crypto';
 
 interface UploadResult {
     fileId: string;
@@ -15,14 +10,8 @@ export async function uploadFile(
     file: File,
     onProgress?: (percent: number) => void,
 ): Promise<UploadResult> {
-    const encryptionKey = generateKey();
+    const context = await createFileEncryptionContext();
     const totalChunks = Math.ceil(file.size / FILE_CHUNK_SIZE);
-
-    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-    const encryptionSalt = btoa(String.fromCharCode(...saltBytes));
-    const baseIv = crypto.getRandomValues(new Uint8Array(12));
-    const cryptoKey = await deriveFileKey(encryptionKey, encryptionSalt);
-    const clientIv = btoa(String.fromCharCode(...baseIv));
 
     const { upload_id: uploadId } = await apiPost<{ upload_id: string }>(
         '/api/files/initiate',
@@ -31,20 +20,17 @@ export async function uploadFile(
             mime_type: file.type || 'application/octet-stream',
             size: file.size,
             total_chunks: totalChunks,
-            encryption_salt: encryptionSalt,
-            client_iv: clientIv,
+            encryption_salt: context.encryptionSalt,
+            client_iv: context.clientIv,
         },
     );
 
     for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
         const start = chunkIdx * FILE_CHUNK_SIZE;
         const end = Math.min(start + FILE_CHUNK_SIZE, file.size);
-        const plainBlob = file.slice(start, end);
-        const plainBuffer = await plainBlob.arrayBuffer();
-        const encryptedBuffer = await encryptChunk(
-            cryptoKey,
+        const plainBuffer = await file.slice(start, end).arrayBuffer();
+        const encryptedBuffer = await context.processChunk(
             plainBuffer,
-            baseIv,
             chunkIdx,
         );
         const encryptedBlob = new Blob([encryptedBuffer]);
@@ -64,5 +50,5 @@ export async function uploadFile(
         shared_file_id: string;
     }>(`/api/files/${uploadId}/complete`);
 
-    return { fileId, encryptionKey };
+    return { fileId, encryptionKey: context.encryptionKey };
 }
