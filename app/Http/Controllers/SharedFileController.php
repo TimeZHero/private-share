@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DeleteStorageObject;
 use App\Models\PendingUpload;
 use App\Models\SharedFile;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
+use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SharedFileController extends Controller
 {
@@ -161,13 +166,18 @@ class SharedFileController extends Controller
     /**
      * Serve the client-encrypted file to the browser, then burn.
      *
-     * Streams the file from any disk (local or S3) with explicit
-     * Content-Length. The server never sees plaintext — it just
-     * passes encrypted bytes through.
+     * For cloud disks (S3): returns a JSON response with a short-lived
+     * signed URL so the client downloads directly, bypassing the app
+     * server entirely. The model is deleted immediately; the S3 object
+     * is cleaned up by the scheduled cleanup command.
+     *
+     * For local disk: downloads into a temp file, burns the original,
+     * then serves the temp file (auto-deleted after sending).
      */
-    public function download(SharedFile $sharedFile): StreamedResponse|JsonResponse
+    public function download(SharedFile $sharedFile): BinaryFileResponse|JsonResponse
     {
-        $disk = Storage::disk(config('features.file_disk'));
+        $diskName = config('features.file_disk');
+        $disk = Storage::disk($diskName);
 
         if (! $disk->exists($sharedFile->storage_path)) {
             return response()->json([
@@ -176,22 +186,52 @@ class SharedFileController extends Controller
             ], 404);
         }
 
-        $storagePath = $sharedFile->storage_path;
-        $sharedFileToDelete = $sharedFile;
-        app()->terminating(function () use ($sharedFileToDelete, $disk, $storagePath): void {
-            $disk->delete($storagePath);
-            $sharedFileToDelete->delete();
-        });
+        if ($this->supportsSignedUrls($disk)) {
+            return $this->downloadViaSignedUrl($sharedFile, $disk);
+        }
 
-        return response()->stream(function () use ($disk, $storagePath): void {
-            $stream = $disk->readStream($storagePath);
-            fpassthru($stream);
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-        }, 200, [
+        return $this->downloadViaLocalFile($sharedFile, $disk);
+    }
+
+    private function downloadViaSignedUrl(SharedFile $sharedFile, Filesystem $disk): JsonResponse
+    {
+        $downloadUrl = $disk->temporaryUrl($sharedFile->storage_path, now()->addMinutes(5));
+
+        $metadata = [
+            'download_url' => $downloadUrl,
+            'client_encrypted' => $sharedFile->client_encrypted,
+            'encryption_salt' => $sharedFile->encryption_salt ?? '',
+            'client_iv' => $sharedFile->client_iv ?? '',
+            'original_mime_type' => $sharedFile->mime_type,
+            'plaintext_size' => $sharedFile->size,
+            'original_name' => $sharedFile->original_name,
+        ];
+
+        $storagePath = $sharedFile->storage_path;
+        $diskName = config('features.file_disk');
+        $sharedFile->deleteQuietly();
+
+        DeleteStorageObject::dispatch($storagePath, $diskName)->delay(now()->addMinutes(10));
+
+        return response()->json($metadata);
+    }
+
+    private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse
+    {
+        $tempFile = tempnam(sys_get_temp_dir(), 'ps_download_');
+        $source = $disk->readStream($sharedFile->storage_path);
+        $destination = fopen($tempFile, 'wb');
+        stream_copy_to_stream($source, $destination);
+        fclose($destination);
+        if (is_resource($source)) {
+            fclose($source);
+        }
+
+        $disk->delete($sharedFile->storage_path);
+        $sharedFile->delete();
+
+        return response()->file($tempFile, [
             'Content-Type' => 'application/octet-stream',
-            'Content-Length' => $disk->size($sharedFile->storage_path),
             'Content-Disposition' => 'attachment; filename="'.addslashes($sharedFile->original_name).'"',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma' => 'no-cache',
@@ -201,6 +241,18 @@ class SharedFileController extends Controller
             'X-Original-Mime-Type' => $sharedFile->mime_type,
             'X-Plaintext-Size' => (string) $sharedFile->size,
             'Access-Control-Expose-Headers' => 'X-Client-Encrypted, X-Encryption-Salt, X-Client-Iv, X-Original-Mime-Type, X-Plaintext-Size, Content-Disposition',
-        ]);
+        ])->deleteFileAfterSend();
+    }
+
+    private function supportsSignedUrls(Filesystem $disk): bool
+    {
+        if (! $disk instanceof FilesystemAdapter) {
+            return false;
+        }
+
+        $adapter = $disk->getAdapter();
+
+        return $adapter instanceof AwsS3V3Adapter
+            || $adapter instanceof GoogleCloudStorageAdapter;
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Features\Authentication;
 use App\Features\FileUploads;
+use App\Jobs\DeleteStorageObject;
 use App\Models\PendingUpload;
 use App\Models\Secret;
 use App\Models\SharedFile;
@@ -648,4 +649,15 @@ test('cleanup command deletes stale pending uploads', function () {
     expect(PendingUpload::count())->toBe(1);
     expect(PendingUpload::find($stale->id))->toBeNull();
     expect(PendingUpload::find($recent->id))->not->toBeNull();
+});
+
+test('DeleteStorageObject job removes file from disk', function () {
+    $disk = config('features.file_disk');
+    Storage::disk($disk)->put('shared-files/test-cleanup.enc', 'dummy');
+    Storage::disk($disk)->assertExists('shared-files/test-cleanup.enc');
+
+    $job = new DeleteStorageObject('shared-files/test-cleanup.enc', $disk);
+    $job->handle();
+
+    Storage::disk($disk)->assertMissing('shared-files/test-cleanup.enc');
 });

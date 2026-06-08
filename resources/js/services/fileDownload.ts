@@ -46,22 +46,82 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+interface SignedUrlResponse {
+    download_url: string;
+    client_encrypted: boolean;
+    encryption_salt: string;
+    client_iv: string;
+    original_mime_type: string;
+    plaintext_size: number;
+    original_name: string;
+}
+
+async function fetchFileResponse(fileId: string): Promise<{
+    response: Response;
+    isClientEncrypted: boolean;
+    encryptionSalt: string | null;
+    clientIv: string | null;
+    originalMimeType: string;
+    plaintextSize: number;
+    filename: string;
+}> {
+    const initialResponse = await apiPostRaw(`/api/files/${fileId}/download`);
+    const contentType = initialResponse.headers.get('content-type') ?? '';
+
+    if (contentType.includes('application/json')) {
+        const data: SignedUrlResponse = await initialResponse.json();
+        const fileResponse = await fetch(data.download_url);
+        if (!fileResponse.ok) {
+            throw new Error(`Download failed (${fileResponse.status})`);
+        }
+        return {
+            response: fileResponse,
+            isClientEncrypted: data.client_encrypted,
+            encryptionSalt: data.encryption_salt || null,
+            clientIv: data.client_iv || null,
+            originalMimeType: data.original_mime_type,
+            plaintextSize: data.plaintext_size,
+            filename: data.original_name,
+        };
+    }
+
+    return {
+        response: initialResponse,
+        isClientEncrypted:
+            initialResponse.headers.get('X-Client-Encrypted') === '1',
+        encryptionSalt: initialResponse.headers.get('X-Encryption-Salt'),
+        clientIv: initialResponse.headers.get('X-Client-Iv'),
+        originalMimeType:
+            initialResponse.headers.get('X-Original-Mime-Type') ??
+            'application/octet-stream',
+        plaintextSize: parseInt(
+            initialResponse.headers.get('X-Plaintext-Size') ?? '0',
+            10,
+        ),
+        filename:
+            initialResponse.headers
+                .get('Content-Disposition')
+                ?.match(/filename="(.+)"/)?.[1] ?? 'download',
+    };
+}
+
 export async function downloadAndDecrypt(
     fileId: string,
     encryptionKey: string,
     fileInfo: FileInfo | null,
     onProgress?: (percent: number) => void,
 ): Promise<void> {
-    const response = await apiPostRaw(`/api/files/${fileId}/download`);
+    const {
+        response,
+        isClientEncrypted,
+        encryptionSalt,
+        clientIv: clientIvHeader,
+        originalMimeType,
+        plaintextSize: resolvedPlaintextSize,
+        filename: resolvedFilename,
+    } = await fetchFileResponse(fileId);
 
-    const isClientEncrypted =
-        response.headers.get('X-Client-Encrypted') === '1';
-    const encryptionSalt = response.headers.get('X-Encryption-Salt');
-    const clientIvHeader = response.headers.get('X-Client-Iv');
-    const originalMimeType =
-        response.headers.get('X-Original-Mime-Type') ??
-        'application/octet-stream';
-    const filename = fileInfo?.original_name ?? 'download';
+    const filename = fileInfo?.original_name ?? resolvedFilename;
 
     if (!isClientEncrypted || !encryptionSalt || !clientIvHeader) {
         const blob = await response.blob();
@@ -75,10 +135,7 @@ export async function downloadAndDecrypt(
         clientIvHeader,
     );
 
-    const plaintextSizeHeader = response.headers.get('X-Plaintext-Size');
-    const plaintextSize = plaintextSizeHeader
-        ? parseInt(plaintextSizeHeader, 10)
-        : (fileInfo?.size ?? 0);
+    const plaintextSize = resolvedPlaintextSize || (fileInfo?.size ?? 0);
     const fullChunks = Math.floor(plaintextSize / FILE_CHUNK_SIZE);
     const remainder = plaintextSize % FILE_CHUNK_SIZE;
     const totalChunks = fullChunks + (remainder > 0 ? 1 : 0);
