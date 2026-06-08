@@ -17,7 +17,12 @@ interface Fact {
 const iconClass = 'h-5 w-5 shrink-0';
 
 const lockIcon: ReactElement = (
-    <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -28,7 +33,12 @@ const lockIcon: ReactElement = (
 );
 
 const keyIcon: ReactElement = (
-    <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -39,7 +49,12 @@ const keyIcon: ReactElement = (
 );
 
 const eyeIcon: ReactElement = (
-    <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -50,7 +65,12 @@ const eyeIcon: ReactElement = (
 );
 
 const clockIcon: ReactElement = (
-    <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
         <path
             strokeLinecap="round"
             strokeLinejoin="round"

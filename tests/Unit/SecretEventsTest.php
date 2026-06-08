@@ -3,6 +3,7 @@
 use App\Events\SecretRetrieved;
 use App\Listeners\BurnSecret;
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
@@ -55,7 +56,7 @@ describe('SecretRetrieved Event', function () {
         $ageInSeconds = 300;
         $secret = Secret::factory()->create();
 
-        \Illuminate\Support\Facades\DB::table('secrets')
+        DB::table('secrets')
             ->where('id', $secret->id)
             ->update(['created_at' => now()->subSeconds($ageInSeconds)]);
 

@@ -1,9 +1,6 @@
-import type { ShareResult } from '@/services/secretSharing';
-import {
-    shareSecret,
-    validateShareInputs,
-} from '@/services/secretSharing';
 import { uploadFile } from '@/services/fileUpload';
+import type { ShareResult } from '@/services/secretSharing';
+import { shareSecret, validateShareInputs } from '@/services/secretSharing';
 import { useCallback, useState } from 'react';
 
 export type ShareFlowState =

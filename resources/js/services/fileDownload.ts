@@ -94,7 +94,10 @@ export async function downloadAndDecrypt(
         const chunk = await reader.pull(needed);
         if (chunk.length === 0) break;
 
-        const plain = await context.processChunk(chunk.buffer as ArrayBuffer, idx);
+        const plain = await context.processChunk(
+            chunk.buffer as ArrayBuffer,
+            idx,
+        );
         decryptedParts.push(new Uint8Array(plain));
 
         if (onProgress && totalChunks > 1) {

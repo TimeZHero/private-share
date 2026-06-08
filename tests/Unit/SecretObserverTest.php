@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 test('observer logs secret creation with id', function () {
@@ -18,7 +19,7 @@ test('observer logs secret creation with id', function () {
 test('observer logs secret deletion with id and age', function () {
     // Create secret and set it to be 60 seconds old
     $secret = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $secret->id)
         ->update(['created_at' => now()->subSeconds(60)]);
 
@@ -40,7 +41,7 @@ test('deletion log includes accurate age in seconds', function () {
     $secret = Secret::factory()->create();
     $ageInSeconds = 120;
 
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $secret->id)
         ->update(['created_at' => now()->subSeconds($ageInSeconds)]);
 

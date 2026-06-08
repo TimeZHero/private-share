@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\GuestLinkFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class GuestLink extends Model
 {
-    /** @use HasFactory<\Database\Factories\GuestLinkFactory> */
+    /** @use HasFactory<GuestLinkFactory> */
     use HasFactory;
 
     protected $keyType = 'string';

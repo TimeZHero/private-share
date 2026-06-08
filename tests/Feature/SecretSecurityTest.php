@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -245,7 +246,7 @@ describe('Secret Lifecycle Security', function () {
         expect(Secret::find($secretId))->toBeNull();
 
         // Direct database query to be absolutely sure
-        $count = \Illuminate\Support\Facades\DB::table('secrets')
+        $count = DB::table('secrets')
             ->where('id', $secretId)
             ->count();
 
@@ -279,7 +280,7 @@ describe('Secret Lifecycle Security', function () {
         }
 
         // Also check raw database
-        $found = \Illuminate\Support\Facades\DB::table('secrets')
+        $found = DB::table('secrets')
             ->where('content', 'like', '%'.$sensitiveContent.'%')
             ->exists();
 

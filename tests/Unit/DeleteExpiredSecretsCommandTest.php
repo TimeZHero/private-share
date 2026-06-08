@@ -1,10 +1,12 @@
 <?php
 
+use App\Console\Commands\DeleteExpiredSecretsCommand;
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 test('command has correct signature and description', function () {
-    $command = app(\App\Console\Commands\DeleteExpiredSecretsCommand::class);
+    $command = app(DeleteExpiredSecretsCommand::class);
 
     expect($command->getName())->toBe('secrets:cleanup');
     expect($command->getDescription())->toBe('Delete secrets, shared files older than 30 days, and stale pending uploads');
@@ -13,19 +15,19 @@ test('command has correct signature and description', function () {
 test('command deletes only expired secrets (30+ days old)', function () {
     // 31 days old - should be deleted
     $expired31 = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $expired31->id)
         ->update(['created_at' => now()->subDays(31)]);
 
     // 45 days old - should be deleted
     $expired45 = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $expired45->id)
         ->update(['created_at' => now()->subDays(45)]);
 
     // 29 days old - should NOT be deleted
     $notExpired = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $notExpired->id)
         ->update(['created_at' => now()->subDays(29)]);
 
@@ -51,7 +53,7 @@ test('command returns success exit code', function () {
 
 test('command triggers observer deletion logs', function () {
     $secret = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $secret->id)
         ->update(['created_at' => now()->subDays(31)]);
 
@@ -67,7 +69,7 @@ test('command handles large batch of expired secrets', function () {
     $expiredSecrets = Secret::factory()->count(50)->create();
 
     foreach ($expiredSecrets as $secret) {
-        \Illuminate\Support\Facades\DB::table('secrets')
+        DB::table('secrets')
             ->where('id', $secret->id)
             ->update(['created_at' => now()->subDays(35)]);
     }

@@ -8,7 +8,9 @@ use App\Models\SharedFile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Pennant\Feature;
 
@@ -485,7 +487,7 @@ test('password protected file secret requires correct password at retrieval', fu
 
 test('cleanup command deletes shared files older than 30 days', function () {
     $oldFile = SharedFile::factory()->create();
-    \Illuminate\Support\Facades\DB::table('shared_files')
+    DB::table('shared_files')
         ->where('id', $oldFile->id)
         ->update(['created_at' => now()->subDays(31)]);
 
@@ -619,19 +621,19 @@ test('E2E crypto round-trip: PHP mimics JS encrypt → upload → download → d
 
 test('cleanup command deletes stale pending uploads', function () {
     $stale = PendingUpload::create([
-        'id' => \Illuminate\Support\Str::uuid(),
+        'id' => Str::uuid(),
         'original_name' => 'stale.bin',
         'mime_type' => 'application/octet-stream',
         'total_size' => 1024,
         'total_chunks' => 1,
         'temp_path' => storage_path('app/private/uploads/stale-test'),
     ]);
-    \Illuminate\Support\Facades\DB::table('pending_uploads')
+    DB::table('pending_uploads')
         ->where('id', $stale->id)
         ->update(['created_at' => now()->subHours(25)]);
 
     $recent = PendingUpload::create([
-        'id' => \Illuminate\Support\Str::uuid(),
+        'id' => Str::uuid(),
         'original_name' => 'recent.bin',
         'mime_type' => 'application/octet-stream',
         'total_size' => 1024,

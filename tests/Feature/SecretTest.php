@@ -3,6 +3,7 @@
 use App\Features\Authentication;
 use App\Features\FileUploads;
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Pennant\Feature;
 
@@ -270,13 +271,13 @@ test('checking non-existent secret returns 404', function () {
 test('secrets cleanup command deletes secrets older than 30 days', function () {
     // Create an old secret (31 days ago) - use DB facade to bypass model timestamps
     $oldSecret = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $oldSecret->id)
         ->update(['created_at' => now()->subDays(31)]);
 
     // Create a recent secret (29 days ago)
     $recentSecret = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $recentSecret->id)
         ->update(['created_at' => now()->subDays(29)]);
 

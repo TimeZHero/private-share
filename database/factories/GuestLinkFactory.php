@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\GuestLink;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\GuestLink>
+ * @extends Factory<GuestLink>
  */
 class GuestLinkFactory extends Factory
 {

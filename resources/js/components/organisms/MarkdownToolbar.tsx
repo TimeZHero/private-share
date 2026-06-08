@@ -369,7 +369,9 @@ export function MarkdownToolbar({
                                     <button
                                         key={action.type}
                                         type="button"
-                                        onClick={() => handleAction(action.type)}
+                                        onClick={() =>
+                                            handleAction(action.type)
+                                        }
                                         className="toolbar-btn"
                                         title={
                                             action.shortcut

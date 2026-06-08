@@ -1,4 +1,8 @@
-import type { FileInfo, SecretCheckResponse, SecretRetrieveResponse } from '@/types';
+import type {
+    FileInfo,
+    SecretCheckResponse,
+    SecretRetrieveResponse,
+} from '@/types';
 
 export type ViewPhase = 'loading' | 'confirmation' | 'success' | 'error';
 
@@ -28,9 +32,9 @@ export interface SecretViewApi {
     getEncryptionKeyFromHash: () =>
         | { valid: true; key: string }
         | { valid: false; error: string };
-    extractKeyFromInput: (input: string) =>
-        | { valid: true; key: string }
-        | { valid: false; error: string };
+    extractKeyFromInput: (
+        input: string,
+    ) => { valid: true; key: string } | { valid: false; error: string };
     isPasswordError: (error: unknown) => boolean;
     isNotFoundError: (error: unknown) => boolean;
 }
@@ -159,8 +163,7 @@ export class SecretViewMachine {
                     phase: 'success',
                     content,
                     createdAt: this.state.createdAt,
-                    markdownEnabled:
-                        this.checkData?.markdown_enabled ?? false,
+                    markdownEnabled: this.checkData?.markdown_enabled ?? false,
                     hasFile: this.checkData?.has_file ?? false,
                     fileInfo: this.checkData?.file ?? null,
                     encryptionKey: this.savedKey,
@@ -213,8 +216,7 @@ export class SecretViewMachine {
             if (result.content) {
                 this.update({
                     loadingTitle: 'Decrypting...',
-                    loadingText:
-                        'Please wait while we decrypt your secret',
+                    loadingText: 'Please wait while we decrypt your secret',
                 });
 
                 try {

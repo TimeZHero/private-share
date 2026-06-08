@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Secret;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 test('secret uses string primary key', function () {
@@ -89,7 +90,7 @@ test('password attribute is hidden in serialization', function () {
 test('olderThan scope filters secrets by creation date', function () {
     // Create secret "older" than 30 days
     $oldSecret = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $oldSecret->id)
         ->update(['created_at' => now()->subDays(31)]);
 
@@ -112,12 +113,12 @@ test('olderThan scope returns empty when no old secrets exist', function () {
 
 test('olderThan scope boundary condition: exactly 30 days is not included', function () {
     $exactlyThirtyDays = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $exactlyThirtyDays->id)
         ->update(['created_at' => now()->subDays(30)]);
 
     $thirtyOneDays = Secret::factory()->create();
-    \Illuminate\Support\Facades\DB::table('secrets')
+    DB::table('secrets')
         ->where('id', $thirtyOneDays->id)
         ->update(['created_at' => now()->subDays(31)]);
 

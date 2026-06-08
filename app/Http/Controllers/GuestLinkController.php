@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GuestLink;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -31,7 +32,7 @@ class GuestLinkController extends Controller
         ]);
     }
 
-    public function access(Request $request, GuestLink $guestLink): \Illuminate\Http\RedirectResponse
+    public function access(Request $request, GuestLink $guestLink): RedirectResponse
     {
         if ($guestLink->isExpired()) {
             abort(410, 'This guest link has expired.');

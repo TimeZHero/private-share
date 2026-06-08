@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SharedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -59,7 +60,7 @@ test('formattedSize returns human readable sizes', function () {
 
 test('olderThan scope filters files by creation date', function () {
     $oldFile = SharedFile::factory()->create();
-    \Illuminate\Support\Facades\DB::table('shared_files')
+    DB::table('shared_files')
         ->where('id', $oldFile->id)
         ->update(['created_at' => now()->subDays(31)]);
 

@@ -64,7 +64,14 @@ export function SecretEditor({
             enablePassword,
             markdownEnabled,
         });
-    }, [content, selectedFile, password, enablePassword, markdownEnabled, share]);
+    }, [
+        content,
+        selectedFile,
+        password,
+        enablePassword,
+        markdownEnabled,
+        share,
+    ]);
 
     const handleReset = useCallback(() => {
         setContent('');
@@ -282,9 +289,7 @@ export function SecretEditor({
         markdownEnabled && content.trim() ? renderMarkdown(content) : '';
 
     const isProcessing =
-        state === 'uploading' ||
-        state === 'encrypting' ||
-        state === 'saving';
+        state === 'uploading' || state === 'encrypting' || state === 'saving';
 
     const buttonLabel =
         state === 'uploading'
@@ -518,9 +523,7 @@ function FileAttachment({
         ? `Encrypting & uploading... ${uploadProgress}%`
         : 'Ready to encrypt & upload';
 
-    const borderColor = isDone
-        ? 'border-emerald-500/40'
-        : 'border-white/10';
+    const borderColor = isDone ? 'border-emerald-500/40' : 'border-white/10';
 
     const fillColor = isDone
         ? 'bg-emerald-500/15'

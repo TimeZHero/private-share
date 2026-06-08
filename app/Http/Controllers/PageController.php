@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Features\Authentication;
 use App\Features\FileUploads;
 use App\Models\Secret;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Laravel\Pennant\Feature;
@@ -23,7 +24,7 @@ class PageController extends Controller
         ]);
     }
 
-    public function login(): InertiaResponse|\Illuminate\Http\RedirectResponse
+    public function login(): InertiaResponse|RedirectResponse
     {
         if (! Feature::active(Authentication::class)) {
             abort(404);
