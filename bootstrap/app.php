@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Laravel\Pennant\Feature;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,18 +37,25 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->respond(function (Response $response, \Throwable $exception, Request $request) {
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             if ($request->expectsJson()) {
                 return $response;
             }
 
-            $inertiaErrorCodes = [400, 401, 403, 404, 405, 408, 419, 422, 429, 500, 501, 502, 503, 504];
             $statusCode = $response->getStatusCode();
 
-            $shouldRenderInertia = (! app()->environment('local') && in_array($statusCode, $inertiaErrorCodes))
-                || (app()->environment('local') && in_array($statusCode, [404, 403, 419, 429, 503]));
+            // Only error responses become styled pages. Redirects (e.g. auth) and
+            // successful responses must pass through untouched.
+            if ($statusCode < 400) {
+                return $response;
+            }
 
-            if (! $shouldRenderInertia) {
+            // In production every client/server error renders the branded page so
+            // nothing falls through to the default framework error page. Locally we
+            // keep Laravel's debug page for unexpected errors (so stack traces stay
+            // available) and only style the predictable user-facing codes.
+            $localStyledCodes = [403, 404, 419, 429, 503];
+            if (app()->environment('local') && ! in_array($statusCode, $localStyledCodes)) {
                 return $response;
             }
 
@@ -83,9 +91,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 'flash' => ['error' => null, 'success' => null],
             ]);
 
+            // Only surface messages from intentional HTTP exceptions (e.g. abort(410, '...')).
+            // Raw messages from unexpected exceptions could leak internal details.
+            $message = $exception instanceof HttpExceptionInterface ? $exception->getMessage() : '';
+
             return Inertia::render('Error', [
                 'status' => $statusCode,
-                'message' => $exception->getMessage(),
+                'message' => $message,
             ])
                 ->toResponse($request)
                 ->setStatusCode($statusCode);

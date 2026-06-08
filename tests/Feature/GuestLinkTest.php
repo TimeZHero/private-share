@@ -5,6 +5,7 @@ use App\Features\FileUploads;
 use App\Models\GuestLink;
 use App\Models\User;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Pennant\Feature;
 
 beforeEach(function () {
@@ -76,14 +77,18 @@ describe('Guest Link Access', function () {
         $response->assertForbidden();
     });
 
-    it('returns 410 for expired guest link', function () {
+    it('returns 410 for expired guest link and renders the branded error page', function () {
         $guestLink = GuestLink::factory()->expired()->create();
 
         $signedUrl = URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]);
 
         $response = $this->get($signedUrl);
 
-        $response->assertStatus(410);
+        $response->assertStatus(410)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Error')
+                ->where('status', 410)
+                ->where('message', 'This guest link has expired.'));
     });
 
     it('returns 404 for non-existent guest link', function () {
