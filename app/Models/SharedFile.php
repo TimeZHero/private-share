@@ -2,22 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasShortId;
 use App\Observers\SharedFileObserver;
+use Database\Factories\SharedFileFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 #[ObservedBy(SharedFileObserver::class)]
 class SharedFile extends Model
 {
-    /** @use HasFactory<\Database\Factories\SharedFileFactory> */
+    /** @use HasFactory<SharedFileFactory> */
     use HasFactory;
 
-    protected $keyType = 'string';
-
-    public $incrementing = false;
+    use HasShortId;
 
     /** @var list<string> */
     protected $fillable = [
@@ -57,24 +56,6 @@ class SharedFile extends Model
         }
 
         return round($bytes, 1).' '.$units[$index];
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (SharedFile $file) {
-            if (empty($file->id)) {
-                $file->id = self::generateUniqueId();
-            }
-        });
-    }
-
-    public static function generateUniqueId(): string
-    {
-        do {
-            $id = Str::random(12);
-        } while (self::whereId($id)->exists());
-
-        return $id;
     }
 
     public function scopeOlderThan(Builder $query, int $days): Builder
