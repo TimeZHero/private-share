@@ -5,9 +5,8 @@ import { Toggle } from '@/components/atoms/Toggle';
 import { CopyField } from '@/components/molecules/CopyField';
 import { GlowCard } from '@/components/molecules/GlowCard';
 import { PasswordInput } from '@/components/molecules/PasswordInput';
-import { FileUploader } from '@/components/organisms/FileUploader';
 import { MarkdownToolbar } from '@/components/organisms/MarkdownToolbar';
-import { useSecretSharing } from '@/hooks/useSecretSharing';
+import { useShareFlow } from '@/hooks/useShareFlow';
 import type { MarkdownAction } from '@/services/markdown';
 import { computeMarkdownInsertion, renderMarkdown } from '@/services/markdown';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -25,24 +24,22 @@ export function SecretEditor({
     const [markdownEnabled, setMarkdownEnabled] = useState(false);
     const [enablePassword, setEnablePassword] = useState(false);
     const [password, setPassword] = useState('');
-    const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
-    const [fileEncryptionKey, setFileEncryptionKey] = useState<string | null>(
-        null,
-    );
-    const [fileUploadPending, setFileUploadPending] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const plainTextareaRef = useRef<HTMLTextAreaElement>(null);
     const markdownTextareaRef = useRef<HTMLTextAreaElement>(null);
     const passwordRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const {
         state,
+        uploadProgress,
         result,
         error,
         clearError,
         share,
         reset: resetSharing,
-    } = useSecretSharing();
+    } = useShareFlow();
 
     const handleMarkdownToggle = useCallback(() => {
         setMarkdownEnabled((prev) => !prev);
@@ -62,50 +59,43 @@ export function SecretEditor({
     const handleShare = useCallback(async () => {
         await share({
             content,
-            uploadedFileId,
-            fileEncryptionKey,
+            file: selectedFile,
             password,
             enablePassword,
             markdownEnabled,
-            fileUploadPending,
         });
-    }, [
-        content,
-        uploadedFileId,
-        fileEncryptionKey,
-        password,
-        enablePassword,
-        markdownEnabled,
-        fileUploadPending,
-        share,
-    ]);
+    }, [content, selectedFile, password, enablePassword, markdownEnabled, share]);
 
     const handleReset = useCallback(() => {
         setContent('');
         setMarkdownEnabled(false);
         setEnablePassword(false);
         setPassword('');
-        setUploadedFileId(null);
-        setFileEncryptionKey(null);
-        setFileUploadPending(false);
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
         resetSharing();
     }, [resetSharing]);
 
-    const handleFileUploaded = useCallback((fileId: string, key: string) => {
-        setUploadedFileId(fileId);
-        setFileEncryptionKey(key);
-        setFileUploadPending(false);
-    }, []);
+    const handleFileChange = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
 
-    const handleFileAdded = useCallback(() => {
-        setFileUploadPending(true);
-        setEnablePassword(true);
-    }, []);
+            const maxBytes = maxSizeGb * 1024 * 1024 * 1024;
+            if (file.size > maxBytes) {
+                alert(`File too large. Maximum size is ${maxSizeGb} GB.`);
+                return;
+            }
 
-    const handleFileRemoved = useCallback(() => {
-        setUploadedFileId(null);
-        setFileEncryptionKey(null);
-        setFileUploadPending(false);
+            setSelectedFile(file);
+            setEnablePassword(true);
+        },
+        [maxSizeGb],
+    );
+
+    const handleFileRemove = useCallback(() => {
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     }, []);
 
     const handleToolbarContentChange = useCallback((newText: string) => {
@@ -291,6 +281,20 @@ export function SecretEditor({
     const previewHtml =
         markdownEnabled && content.trim() ? renderMarkdown(content) : '';
 
+    const isProcessing =
+        state === 'uploading' ||
+        state === 'encrypting' ||
+        state === 'saving';
+
+    const buttonLabel =
+        state === 'uploading'
+            ? `Uploading ${uploadProgress}%...`
+            : state === 'encrypting'
+              ? 'Encrypting...'
+              : state === 'saving'
+                ? 'Saving...'
+                : 'Share Secret';
+
     return (
         <>
             <MarkdownToolbar
@@ -357,11 +361,14 @@ export function SecretEditor({
             </div>
 
             {fileUploadsEnabled && (
-                <FileUploader
+                <FileAttachment
+                    file={selectedFile}
+                    state={state}
+                    uploadProgress={uploadProgress}
                     maxSizeGb={maxSizeGb}
-                    onFileUploaded={handleFileUploaded}
-                    onFileRemoved={handleFileRemoved}
-                    onFileAdded={handleFileAdded}
+                    fileInputRef={fileInputRef}
+                    onFileChange={handleFileChange}
+                    onFileRemove={handleFileRemove}
                 />
             )}
 
@@ -370,14 +377,14 @@ export function SecretEditor({
                     <Toggle
                         id="enable-password"
                         label={
-                            uploadedFileId
+                            selectedFile
                                 ? 'Password (required for files)'
                                 : 'Require password'
                         }
                         title="Require a password to view"
                         checked={enablePassword}
                         onChange={handlePasswordToggle}
-                        disabled={!!uploadedFileId}
+                        disabled={!!selectedFile}
                     />
                     {enablePassword && (
                         <div className="animate-fadeIn w-full sm:w-auto">
@@ -396,14 +403,10 @@ export function SecretEditor({
 
                 <Button
                     onClick={handleShare}
-                    disabled={
-                        state === 'encrypting' ||
-                        state === 'saving' ||
-                        fileUploadPending
-                    }
+                    disabled={isProcessing}
                     className="whitespace-nowrap"
                 >
-                    {fileUploadPending ? (
+                    {isProcessing ? (
                         <svg
                             className="h-5 w-5 animate-spin"
                             fill="none"
@@ -438,13 +441,7 @@ export function SecretEditor({
                             />
                         </svg>
                     )}
-                    {fileUploadPending
-                        ? 'Uploading...'
-                        : state === 'encrypting'
-                          ? 'Encrypting...'
-                          : state === 'saving'
-                            ? 'Saving...'
-                            : 'Share Secret'}
+                    {buttonLabel}
                 </Button>
             </div>
 
@@ -457,5 +454,149 @@ export function SecretEditor({
                 />
             )}
         </>
+    );
+}
+
+function FileAttachment({
+    file,
+    state,
+    uploadProgress,
+    maxSizeGb,
+    fileInputRef,
+    onFileChange,
+    onFileRemove,
+}: {
+    file: File | null;
+    state: string;
+    uploadProgress: number;
+    maxSizeGb: number;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onFileRemove: () => void;
+}) {
+    if (!file) {
+        return (
+            <div className="mb-4">
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-[var(--color-surface-light)]/60 p-6 transition-colors hover:border-white/30">
+                    <svg
+                        className="h-8 w-8 text-[var(--color-text)]/40"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                    </svg>
+                    <span className="text-sm text-[var(--color-text)]/60">
+                        Drag & drop a file or{' '}
+                        <span className="text-[var(--color-primary-400)] underline">
+                            Browse
+                        </span>
+                        <span className="ml-1 text-xs text-[var(--color-text)]/30">
+                            (up to {maxSizeGb} GB)
+                        </span>
+                    </span>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={onFileChange}
+                    />
+                </label>
+            </div>
+        );
+    }
+
+    const isUploading = state === 'uploading';
+    const isDone = state !== 'uploading' && state !== 'idle';
+
+    const statusText = isUploading
+        ? `Encrypting & uploading... ${uploadProgress}%`
+        : 'Ready to encrypt & upload';
+
+    const borderColor = isDone
+        ? 'border-emerald-500/40'
+        : 'border-white/10';
+
+    const fillColor = isDone
+        ? 'bg-emerald-500/15'
+        : 'bg-[var(--color-button)]/15';
+
+    const fillWidth = isUploading
+        ? `${uploadProgress}%`
+        : isDone
+          ? '100%'
+          : '0%';
+
+    const iconColor = isDone
+        ? 'text-emerald-400'
+        : 'text-[var(--color-text)]/80';
+
+    return (
+        <div className="mb-4">
+            <div
+                className={`relative flex items-center gap-3 bg-[var(--color-surface-light)] p-4 ${borderColor} overflow-hidden rounded-xl border`}
+            >
+                <div
+                    className={`absolute inset-0 ${fillColor} transition-all duration-300 ease-out`}
+                    style={{ width: fillWidth }}
+                />
+                <svg
+                    className={`relative h-5 w-5 ${iconColor} shrink-0`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    {isDone ? (
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                        />
+                    ) : (
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                    )}
+                </svg>
+                <div className="relative min-w-0 flex-1">
+                    <p className="truncate text-sm text-[var(--color-text)]">
+                        {file.name}
+                    </p>
+                    <p className="text-xs text-[var(--color-text)]/60">
+                        {statusText}
+                    </p>
+                </div>
+                {!isUploading && (
+                    <button
+                        type="button"
+                        onClick={onFileRemove}
+                        className="relative text-[var(--color-text)]/60 transition-colors hover:text-[var(--color-text)]"
+                    >
+                        <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                )}
+            </div>
+        </div>
     );
 }
