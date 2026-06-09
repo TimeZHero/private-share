@@ -5,6 +5,8 @@ import type { SharedPageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+const STORAGE_KEY = 'privateshare:how-it-works-seen';
+
 export function ProfileMenu() {
     const { auth, features } = usePage<SharedPageProps>().props;
     const user = auth?.user;
@@ -13,6 +15,13 @@ export function ProfileMenu() {
     const [infoOpen, setInfoOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const { creating, create } = useGuestLink();
+
+    useEffect(() => {
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            setInfoOpen(true);
+            localStorage.setItem(STORAGE_KEY, '1');
+        }
+    }, []);
 
     const openInfo = useCallback(() => {
         setOpen(false);

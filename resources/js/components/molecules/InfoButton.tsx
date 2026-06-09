@@ -1,8 +1,17 @@
 import { HowItWorksModal } from '@/components/organisms/HowItWorksModal';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const STORAGE_KEY = 'privateshare:how-it-works-seen';
 
 export function InfoButton() {
     const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        if (!localStorage.getItem(STORAGE_KEY)) {
+            setOpen(true);
+            localStorage.setItem(STORAGE_KEY, '1');
+        }
+    }, []);
 
     return (
         <>
