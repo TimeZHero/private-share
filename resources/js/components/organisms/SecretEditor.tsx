@@ -6,6 +6,7 @@ import { CopyField } from '@/components/molecules/CopyField';
 import { GlowCard } from '@/components/molecules/GlowCard';
 import { PasswordInput } from '@/components/molecules/PasswordInput';
 import { MarkdownToolbar } from '@/components/organisms/MarkdownToolbar';
+import { useFileDrop } from '@/hooks/useFileDrop';
 import { useShareFlow } from '@/hooks/useShareFlow';
 import type { MarkdownAction } from '@/services/markdown';
 import { computeMarkdownInsertion, renderMarkdown } from '@/services/markdown';
@@ -104,6 +105,22 @@ export function SecretEditor({
         setSelectedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
     }, []);
+
+    const handleFileDrop = useCallback(
+        (file: File) => {
+            if (!fileUploadsEnabled) return;
+            const maxBytes = maxSizeGb * 1024 * 1024 * 1024;
+            if (file.size > maxBytes) {
+                alert(`File too large. Maximum size is ${maxSizeGb} GB.`);
+                return;
+            }
+            setSelectedFile(file);
+            setEnablePassword(true);
+        },
+        [fileUploadsEnabled, maxSizeGb],
+    );
+
+    const { isDraggingOverWindow, dropZoneProps } = useFileDrop(handleFileDrop);
 
     const handleToolbarContentChange = useCallback((newText: string) => {
         setContent(newText);
@@ -374,6 +391,7 @@ export function SecretEditor({
                     fileInputRef={fileInputRef}
                     onFileChange={handleFileChange}
                     onFileRemove={handleFileRemove}
+                    dropZoneProps={dropZoneProps}
                 />
             )}
 
@@ -458,6 +476,35 @@ export function SecretEditor({
                     className="mt-3"
                 />
             )}
+
+            {fileUploadsEnabled && isDraggingOverWindow && !selectedFile && (
+                <div
+                    className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    {...dropZoneProps}
+                >
+                    <div className="pointer-events-none flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-[var(--color-primary-400)]/60 bg-[var(--color-surface)]/80 px-16 py-12">
+                        <svg
+                            className="h-14 w-14 text-[var(--color-primary-400)]"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            />
+                        </svg>
+                        <p className="text-lg font-medium text-[var(--color-text)]">
+                            Drop your file to attach
+                        </p>
+                        <p className="text-sm text-[var(--color-text)]/50">
+                            The file will be encrypted end-to-end
+                        </p>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
@@ -470,6 +517,7 @@ function FileAttachment({
     fileInputRef,
     onFileChange,
     onFileRemove,
+    dropZoneProps,
 }: {
     file: File | null;
     state: string;
@@ -478,10 +526,14 @@ function FileAttachment({
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     onFileRemove: () => void;
+    dropZoneProps: {
+        onDragOver: (event: React.DragEvent) => void;
+        onDrop: (event: React.DragEvent) => void;
+    };
 }) {
     if (!file) {
         return (
-            <div className="mb-4">
+            <div className="mb-4" {...dropZoneProps}>
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/15 bg-[var(--color-surface-light)]/60 p-6 transition-colors hover:border-white/30">
                     <svg
                         className="h-8 w-8 text-[var(--color-text)]/40"
