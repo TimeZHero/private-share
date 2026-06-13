@@ -30,7 +30,9 @@ describe('Secret Creation E2E', function () {
     it('shows a plain and markdown mode switch by default', function () {
         $page = visit('/');
 
-        $page->assertSee('Plain')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->assertSee('Plain')
             ->assertSee('Markdown')
             ->assertDontSee('Editor')
             ->assertDontSee('Preview');
@@ -39,7 +41,9 @@ describe('Secret Creation E2E', function () {
     it('displays markdown editor and preview when markdown is enabled', function () {
         $page = visit('/');
 
-        $page->click('Markdown')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Markdown')
             ->waitForText('Editor')
             ->assertSee('Editor')
             ->assertSee('Preview');
@@ -48,7 +52,9 @@ describe('Secret Creation E2E', function () {
     it('returns to a plain editor when markdown is switched off', function () {
         $page = visit('/');
 
-        $page->click('Markdown')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Markdown')
             ->waitForText('Editor')
             ->click('Plain')
             ->assertDontSee('Editor')
@@ -73,7 +79,9 @@ describe('Secret Creation E2E', function () {
     it('creates a secret and shows success view with link', function () {
         $page = visit('/');
 
-        $page->fill('#content', 'My secret message')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->fill('#content', 'My secret message')
             ->click('Share Secret')
             ->waitForText('Secret Created!')
             ->assertSee('The encryption key after # is required to decrypt');
@@ -84,7 +92,9 @@ describe('Secret Creation E2E', function () {
     it('validates empty content', function () {
         $page = visit('/');
 
-        $page->click('Share Secret')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Share Secret')
             ->waitForText('Please enter some content');
     });
 
@@ -93,7 +103,9 @@ describe('Secret Creation E2E', function () {
 
         $plaintext = 'This is my super secret message that should be encrypted';
 
-        $page->fill('#content', $plaintext)
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->fill('#content', $plaintext)
             ->click('Share Secret')
             ->waitForText('Secret Created!');
 
@@ -132,7 +144,9 @@ describe('Secret Retrieval E2E', function () {
 
         $page = visit("/{$secret->id}");
 
-        $page->waitForText('View Secret')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->waitForText('View Secret')
             ->click('View Secret')
             ->waitForText('Decryption Failed');
     });

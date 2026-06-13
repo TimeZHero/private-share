@@ -87,7 +87,9 @@ describe('How It Works Modal E2E', function () {
 
         $page = visit('/');
 
-        $page->click('[aria-label="How it works"]')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('[aria-label="How it works"]')
             ->waitForText('Sharing a secret')
             ->assertDontSee('Having any issues?');
     });

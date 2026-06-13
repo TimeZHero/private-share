@@ -17,7 +17,9 @@ describe('Guest Link E2E', function () {
 
         $page = visit('/');
 
-        $page->assertSee('Create Guest Link')
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->assertSee('Create Guest Link')
             ->click('Create Guest Link')
             ->waitForText('Lasts 24 hours')
             ->assertSee('Guest link')
