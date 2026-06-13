@@ -61,6 +61,15 @@ describe('Secret Creation E2E', function () {
         $page->assertSee('Require password');
     });
 
+    it('password input does not trigger password manager save prompts', function () {
+        $page = visit('/');
+
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Require password')
+            ->assertAttribute('input[type="password"]', 'autocomplete', 'one-time-code');
+    });
+
     it('creates a secret and shows success view with link', function () {
         $page = visit('/');
 

@@ -17,6 +17,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
                 <input
                     ref={ref}
                     type={visible ? 'text' : 'password'}
+                    autoComplete="one-time-code"
                     className={cn(
                         'rounded-lg border border-white/10 bg-[var(--color-surface)]/80 px-3 py-1.5 pr-8 text-sm text-[var(--color-text)] placeholder-[var(--color-text)]/40 focus:border-[var(--color-primary-500)] focus:ring-2 focus:ring-[var(--color-primary-500)]/50 focus:outline-none',
                         fullWidth ? 'w-full' : 'w-full sm:w-52',
