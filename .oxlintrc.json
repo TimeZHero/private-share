@@ -1,0 +1,15 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "env": {
+        "browser": true
+    },
+    "ignorePatterns": [
+        "vendor/**",
+        "node_modules/**",
+        "public/**",
+        "bootstrap/ssr/**"
+    ],
+    "options": {
+        "typeAware": true
+    }
+}

@@ -4,12 +4,7 @@ import { shareSecret, validateShareInputs } from '@/services/secretSharing';
 import { useCallback, useState } from 'react';
 
 export type ShareFlowState =
-    | 'idle'
-    | 'uploading'
-    | 'encrypting'
-    | 'saving'
-    | 'done'
-    | 'error';
+    'idle' | 'uploading' | 'encrypting' | 'saving' | 'done' | 'error';
 
 interface ShareFlowParams {
     content: string;

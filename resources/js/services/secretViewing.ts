@@ -28,8 +28,7 @@ export async function decrypt(
 }
 
 export function getEncryptionKeyFromHash():
-    | { valid: true; key: string }
-    | { valid: false; error: string } {
+    { valid: true; key: string } | { valid: false; error: string } {
     const hash = window.location.hash;
     if (!hash || hash.length < 2) {
         return {

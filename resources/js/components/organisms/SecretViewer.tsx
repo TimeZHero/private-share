@@ -43,7 +43,7 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
         if (isAlreadyViewed(secretId)) {
             return;
         }
-        check(secretId);
+        void check(secretId);
     }, [secretId, check, isAlreadyViewed]);
 
     useEffect(() => {

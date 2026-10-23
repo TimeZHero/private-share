@@ -16,7 +16,9 @@ alwaysApply: true
 
 ## Architecture
 
-- **React 19 + Inertia v2 + TypeScript**: Frontend uses React components served via Inertia.js. All frontend code lives in `resources/js/`.
+- **React 19 + Inertia v3 + TypeScript 7**: Frontend uses React components served via Inertia.js. All frontend code lives in `resources/js/`.
+- **Current framework baseline**: PHP 8.5.12, Laravel 13, Inertia 3, React 19, TypeScript 7, and Pest 5. Frontend linting uses Oxlint with `oxlint-tsgolint` because `typescript-eslint` does not support TypeScript 7.
+- **Hardened serialization**: Cache object unserialization is disabled and sessions use JSON serialization. Deploying the session change invalidates sessions created with PHP serialization.
 - **Atomic Design**: Components organized as atoms → molecules → organisms → layouts → pages (`resources/js/components/{atoms,molecules,organisms,layouts}/` and `resources/js/Pages/`).
 - **Dedicated logic files**: Business logic separated from React components into services (`resources/js/services/`), hooks (`resources/js/hooks/`), and libraries (`resources/js/lib/`). The crypto module (`lib/crypto.ts`) handles all E2E encryption primitives, and services orchestrate flows (secret sharing, secret viewing, file upload/download, markdown).
 - **Controller-based routing**: Standard Laravel controllers and `routes/web.php` — no Folio.

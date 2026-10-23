@@ -30,8 +30,7 @@ export interface SecretViewApi {
     ) => Promise<SecretRetrieveResponse>;
     decryptContent: (encrypted: string, key: string) => Promise<string>;
     getEncryptionKeyFromHash: () =>
-        | { valid: true; key: string }
-        | { valid: false; error: string };
+        { valid: true; key: string } | { valid: false; error: string };
     extractKeyFromInput: (
         input: string,
     ) => { valid: true; key: string } | { valid: false; error: string };

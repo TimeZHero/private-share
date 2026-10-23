@@ -214,4 +214,16 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Session Serialization
+    |--------------------------------------------------------------------------
+    |
+    | This value controls the serialization strategy for session data. JSON
+    | prevents PHP object deserialization if the application key is leaked.
+    |
+    */
+
+    'serialization' => 'json',
+
 ];

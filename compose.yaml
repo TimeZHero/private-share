@@ -25,7 +25,7 @@ services:
             - mysql
             - mailpit
     mysql:
-        image: 'mysql:8.4'
+        image: 'mysql:8.4@sha256:76f0358884cb92d9a086d24e5671c38048d3fef40f2588703d73eb55392d6b69'
         ports:
             - '${FORWARD_DB_PORT:-3306}:3306'
         environment:
@@ -50,7 +50,7 @@ services:
             retries: 3
             timeout: 5s
     mailpit:
-        image: 'axllent/mailpit:latest'
+        image: 'axllent/mailpit:latest@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387'
         ports:
             - '${FORWARD_MAILPIT_PORT:-1025}:1025'
             - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
