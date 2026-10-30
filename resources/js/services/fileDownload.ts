@@ -56,7 +56,7 @@ interface SignedUrlResponse {
     original_name: string;
 }
 
-async function fetchFileResponse(fileId: string): Promise<{
+async function fetchFileResponse(downloadUrl: string): Promise<{
     response: Response;
     isClientEncrypted: boolean;
     encryptionSalt: string | null;
@@ -65,7 +65,7 @@ async function fetchFileResponse(fileId: string): Promise<{
     plaintextSize: number;
     filename: string;
 }> {
-    const initialResponse = await apiPostRaw(`/api/files/${fileId}/download`);
+    const initialResponse = await apiPostRaw(downloadUrl);
     const contentType = initialResponse.headers.get('content-type') ?? '';
 
     if (contentType.includes('application/json')) {
@@ -98,15 +98,24 @@ async function fetchFileResponse(fileId: string): Promise<{
             initialResponse.headers.get('X-Plaintext-Size') ?? '0',
             10,
         ),
-        filename:
-            initialResponse.headers
-                .get('Content-Disposition')
-                ?.match(/filename="(.+)"/)?.[1] ?? 'download',
+        filename: filenameFromDisposition(
+            initialResponse.headers.get('Content-Disposition'),
+        ),
     };
 }
 
+function filenameFromDisposition(disposition: string | null): string {
+    const encoded = disposition?.match(/filename\*=utf-8''([^;]+)/i)?.[1];
+    if (encoded) return decodeURIComponent(encoded);
+
+    const quoted = disposition?.match(/filename="((?:[^"\\]|\\.)*)"/)?.[1];
+    if (quoted) return quoted.replace(/\\(.)/g, '$1');
+
+    return disposition?.match(/filename=([^;]+)/)?.[1]?.trim() ?? 'download';
+}
+
 export async function downloadAndDecrypt(
-    fileId: string,
+    downloadUrl: string,
     encryptionKey: string,
     fileInfo: FileInfo | null,
     onProgress?: (percent: number) => void,
@@ -119,7 +128,7 @@ export async function downloadAndDecrypt(
         originalMimeType,
         plaintextSize: resolvedPlaintextSize,
         filename: resolvedFilename,
-    } = await fetchFileResponse(fileId);
+    } = await fetchFileResponse(downloadUrl);
 
     const filename = fileInfo?.original_name ?? resolvedFilename;
 

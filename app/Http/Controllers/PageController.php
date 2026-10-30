@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Features\Authentication;
 use App\Features\FileUploads;
 use App\Models\Secret;
 use Illuminate\Http\RedirectResponse;
@@ -26,10 +25,6 @@ class PageController extends Controller
 
     public function login(): InertiaResponse|RedirectResponse
     {
-        if (! Feature::active(Authentication::class)) {
-            abort(404);
-        }
-
         if (auth()->check()) {
             return redirect()->route('home');
         }

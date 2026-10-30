@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\GuestLink;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 
@@ -30,17 +29,5 @@ class GuestLinkController extends Controller
             'expires_at' => $expiresAt->toIso8601String(),
             'ttl_hours' => $ttlHours,
         ]);
-    }
-
-    public function access(Request $request, GuestLink $guestLink): RedirectResponse
-    {
-        if ($guestLink->isExpired()) {
-            abort(410, 'This guest link has expired.');
-        }
-
-        $request->session()->put('guest_link_id', $guestLink->id);
-        $request->session()->put('guest_link_expires_at', $guestLink->expires_at->toIso8601String());
-
-        return redirect()->route('home');
     }
 }

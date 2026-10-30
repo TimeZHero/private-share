@@ -185,6 +185,25 @@ describe('Secret Retrieval E2E', function () {
             ->waitForText('Legacy link content');
     });
 
+    it('tells the recipient how long to wait after too many wrong passwords', function () {
+        $secret = Secret::factory()->withPassword('correct horse')->create();
+
+        $page = visit("/{$secret->id}")
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->waitForText('Password Required');
+
+        foreach (range(1, 5) as $attempt) {
+            $page->fill('input[type="password"]', "wrong {$attempt}")
+                ->click('View Secret')
+                ->waitForText('The password is incorrect.');
+        }
+
+        $page->fill('input[type="password"]', 'wrong 6')
+            ->click('View Secret')
+            ->waitForText('Too many wrong passwords. Try again in 1 minute.');
+    });
+
     it('shows decryption error when encryption key is missing from URL', function () {
         $secret = Secret::factory()->create();
 

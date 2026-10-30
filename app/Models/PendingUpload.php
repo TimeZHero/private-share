@@ -14,6 +14,7 @@ class PendingUpload extends Model
     /** @var list<string> */
     protected $fillable = [
         'id',
+        'user_id',
         'original_name',
         'mime_type',
         'total_size',
@@ -28,6 +29,7 @@ class PendingUpload extends Model
     protected function casts(): array
     {
         return [
+            'user_id' => 'integer',
             'total_size' => 'integer',
             'total_chunks' => 'integer',
             'received_chunks' => 'integer',

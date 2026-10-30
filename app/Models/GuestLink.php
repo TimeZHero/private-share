@@ -27,6 +27,7 @@ class GuestLink extends Model
     {
         return [
             'expires_at' => 'datetime',
+            'used_at' => 'datetime',
         ];
     }
 
@@ -50,6 +51,30 @@ class GuestLink extends Model
     public function isExpired(): bool
     {
         return $this->expires_at->isPast();
+    }
+
+    public function isUsed(): bool
+    {
+        return $this->used_at !== null;
+    }
+
+    /**
+     * Marks the link as used unless it already was or has expired. A single
+     * conditional UPDATE, so two concurrent clicks cannot both get in.
+     */
+    public function consume(): bool
+    {
+        $consumed = static::query()
+            ->whereKey($this->getKey())
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->update(['used_at' => now()]) === 1;
+
+        if ($consumed) {
+            $this->refresh();
+        }
+
+        return $consumed;
     }
 
     public function scopeActive(Builder $query): Builder

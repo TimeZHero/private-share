@@ -23,6 +23,7 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
         errorDetail,
         requiresPassword,
         passwordError,
+        retrieveError,
         check,
         confirmAndRetrieve,
         retryDecryption,
@@ -94,12 +95,12 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
     }, [data.content]);
 
     const handleDownload = useCallback(async () => {
-        if (!data.fileId || !data.encryptionKey) return;
+        if (!data.downloadUrl || !data.encryptionKey) return;
         setDownloadDisabled(true);
         setDownloadText('Downloading...');
         try {
             await downloadAndDecrypt(
-                data.fileId,
+                data.downloadUrl,
                 data.encryptionKey,
                 data.fileInfo,
                 (percent) => {
@@ -115,7 +116,7 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
                 setDownloadDisabled(false);
             }, 3000);
         }
-    }, [data.fileId, data.encryptionKey, data.fileInfo]);
+    }, [data.downloadUrl, data.encryptionKey, data.fileInfo]);
 
     if (viewState === 'loading' && isAlreadyViewed(secretId)) {
         return (
@@ -250,6 +251,10 @@ export function SecretViewer({ secretId, createdAt }: SecretViewerProps) {
                             />
                         )}
                     </GlowCard>
+                )}
+
+                {retrieveError && (
+                    <ErrorAlert message={retrieveError} className="mb-6" />
                 )}
 
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">

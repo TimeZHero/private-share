@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BurnsAfterReading;
 use App\Models\Concerns\HasShortId;
 use App\Observers\SecretObserver;
 use Database\Factories\SecretFactory;

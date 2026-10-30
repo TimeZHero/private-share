@@ -47,6 +47,7 @@ class SharedFileController extends Controller
 
         $pendingUpload = PendingUpload::create([
             'id' => $uploadId,
+            'user_id' => $request->user()->id,
             'original_name' => $request->input('name'),
             'mime_type' => $request->input('mime_type'),
             'total_size' => $request->integer('size'),
@@ -168,11 +169,13 @@ class SharedFileController extends Controller
      *
      * For cloud disks (S3): returns a JSON response with a short-lived
      * signed URL so the client downloads directly, bypassing the app
-     * server entirely. The model is deleted immediately; the S3 object
-     * is cleaned up by the scheduled cleanup command.
+     * server entirely. The row is claimed immediately; the object is
+     * deleted by a delayed job once the signed URL has expired.
      *
      * For local disk: downloads into a temp file, burns the original,
      * then serves the temp file (auto-deleted after sending).
+     *
+     * Either way only one of several concurrent requests wins the claim.
      */
     public function download(SharedFile $sharedFile): BinaryFileResponse|JsonResponse
     {
@@ -195,6 +198,10 @@ class SharedFileController extends Controller
 
     private function downloadViaSignedUrl(SharedFile $sharedFile, Filesystem $disk): JsonResponse
     {
+        if (! $sharedFile->claim()) {
+            return $this->alreadyDownloaded();
+        }
+
         $downloadUrl = $disk->temporaryUrl($sharedFile->storage_path, now()->addMinutes(5));
 
         $metadata = [
@@ -207,16 +214,12 @@ class SharedFileController extends Controller
             'original_name' => $sharedFile->original_name,
         ];
 
-        $storagePath = $sharedFile->storage_path;
-        $diskName = config('features.file_disk');
-        $sharedFile->deleteQuietly();
-
-        DeleteStorageObject::dispatch($storagePath, $diskName)->delay(now()->addMinutes(10));
+        DeleteStorageObject::dispatch($sharedFile->storage_path, config('features.file_disk'))->delay(now()->addMinutes(10));
 
         return response()->json($metadata);
     }
 
-    private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse
+    private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse|JsonResponse
     {
         $tempFile = tempnam(sys_get_temp_dir(), 'ps_download_');
         $source = $disk->readStream($sharedFile->storage_path);
@@ -227,14 +230,14 @@ class SharedFileController extends Controller
             fclose($source);
         }
 
-        $disk->delete($sharedFile->storage_path);
-        $sharedFile->delete();
+        if (! $sharedFile->burn()) {
+            @unlink($tempFile);
 
-        return response()->file($tempFile, [
+            return $this->alreadyDownloaded();
+        }
+
+        return response()->download($tempFile, $sharedFile->original_name, [
             'Content-Type' => 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="'.addslashes($sharedFile->original_name).'"',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
             'X-Client-Encrypted' => $sharedFile->client_encrypted ? '1' : '0',
             'X-Encryption-Salt' => $sharedFile->encryption_salt ?? '',
             'X-Client-Iv' => $sharedFile->client_iv ?? '',
@@ -242,6 +245,14 @@ class SharedFileController extends Controller
             'X-Plaintext-Size' => (string) $sharedFile->size,
             'Access-Control-Expose-Headers' => 'X-Client-Encrypted, X-Encryption-Salt, X-Client-Iv, X-Original-Mime-Type, X-Plaintext-Size, Content-Disposition',
         ])->deleteFileAfterSend();
+    }
+
+    private function alreadyDownloaded(): JsonResponse
+    {
+        return response()->json([
+            'error' => 'already_downloaded',
+            'message' => 'This file has already been downloaded.',
+        ], 404);
     }
 
     private function supportsSignedUrls(Filesystem $disk): bool

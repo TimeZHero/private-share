@@ -46,6 +46,19 @@ export function getEncryptionKeyFromHash():
     return { valid: true, key: encryptionKey };
 }
 
+/**
+ * Drops the decryption key from the address bar and the history entry once
+ * it is no longer needed.
+ */
+export function forgetKeyFromUrl(): void {
+    if (!window.location.hash) return;
+    history.replaceState(
+        history.state,
+        '',
+        window.location.pathname + window.location.search,
+    );
+}
+
 export function extractKeyFromInput(
     input: string,
 ): { valid: true; key: string } | { valid: false; error: string } {
@@ -73,4 +86,8 @@ export function isPasswordError(error: unknown): boolean {
 
 export function isNotFoundError(error: unknown): boolean {
     return error instanceof ApiError && error.status === 404;
+}
+
+export function isRateLimitError(error: unknown): error is ApiError {
+    return error instanceof ApiError && error.status === 429;
 }

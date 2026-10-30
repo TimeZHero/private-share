@@ -11,9 +11,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Pennant\Feature;
+
+function signedDownloadUrl(string $sharedFileId): string
+{
+    return URL::temporarySignedRoute('files.download', now()->addDay(), ['sharedFile' => $sharedFileId], absolute: false);
+}
 
 beforeEach(function () {
     Storage::fake(config('features.file_disk'));
@@ -321,7 +327,7 @@ test('check endpoint returns file info for secret with file', function () {
     $response->assertJsonStructure(['file' => ['original_name', 'size', 'formatted_size', 'mime_type', 'client_encrypted', 'encryption_salt', 'client_iv']]);
 });
 
-test('retrieve returns file_id for secret with file', function () {
+test('retrieve returns a signed download URL instead of the file id', function () {
     $secret = ($this->createFileSecret)();
     $sharedFileId = $secret->shared_file_id;
 
@@ -330,10 +336,9 @@ test('retrieve returns file_id for secret with file', function () {
     ]);
 
     $response->assertSuccessful();
-    $response->assertJson([
-        'has_file' => true,
-        'file_id' => $sharedFileId,
-    ]);
+    $response->assertJson(['has_file' => true]);
+    $response->assertJsonMissingPath('file_id');
+    expect($response->json('file_download_url'))->toStartWith("/api/files/{$sharedFileId}/download?expires=");
 
     expect(Secret::find($secret->id))->toBeNull();
     expect(SharedFile::find($sharedFileId))->not->toBeNull();
@@ -362,7 +367,7 @@ test('retrieve burns file secret but keeps shared file for download', function (
 test('can download a file via shared file id', function () {
     $secret = ($this->createFileSecret)();
 
-    $response = $this->postJson("/api/files/{$secret->shared_file_id}/download");
+    $response = $this->postJson(signedDownloadUrl($secret->shared_file_id));
 
     $response->assertSuccessful();
     $response->assertHeader('content-disposition');
@@ -421,7 +426,7 @@ test('download burns shared file after streaming', function () {
     $sharedFileId = $secret->shared_file_id;
     $storagePath = $secret->sharedFile->storage_path;
 
-    $this->postJson("/api/files/{$sharedFileId}/download")->assertSuccessful();
+    $this->postJson(signedDownloadUrl($sharedFileId))->assertSuccessful();
 
     expect(SharedFile::find($sharedFileId))->toBeNull();
     Storage::disk(config('features.file_disk'))->assertMissing($storagePath);
@@ -430,8 +435,8 @@ test('download burns shared file after streaming', function () {
 test('file cannot be downloaded twice', function () {
     $secret = ($this->createFileSecret)();
 
-    $this->postJson("/api/files/{$secret->shared_file_id}/download")->assertSuccessful();
-    $this->postJson("/api/files/{$secret->shared_file_id}/download")->assertNotFound();
+    $this->postJson(signedDownloadUrl($secret->shared_file_id))->assertSuccessful();
+    $this->postJson(signedDownloadUrl($secret->shared_file_id))->assertNotFound();
 });
 
 test('full lifecycle: create → retrieve → download → everything burned', function () {
@@ -440,15 +445,15 @@ test('full lifecycle: create → retrieve → download → everything burned', f
     $sharedFileId = $secret->shared_file_id;
     $storagePath = $secret->sharedFile->storage_path;
 
-    $this->postJson("/api/secrets/{$secretId}/retrieve", ['password' => 'testpassword'])
+    $retrieve = $this->postJson("/api/secrets/{$secretId}/retrieve", ['password' => 'testpassword'])
         ->assertSuccessful()
-        ->assertJson(['has_file' => true, 'file_id' => $sharedFileId, 'content' => 'secret text with file']);
+        ->assertJson(['has_file' => true, 'content' => 'secret text with file']);
 
     expect(Secret::find($secretId))->toBeNull('Secret should be burned after retrieve');
     expect(SharedFile::find($sharedFileId))->not->toBeNull('SharedFile should survive until download');
     Storage::disk(config('features.file_disk'))->assertExists($storagePath);
 
-    $this->postJson("/api/files/{$sharedFileId}/download")
+    $this->postJson($retrieve->json('file_download_url'))
         ->assertSuccessful()
         ->assertHeader('content-disposition');
 
@@ -457,7 +462,33 @@ test('full lifecycle: create → retrieve → download → everything burned', f
 });
 
 test('downloading non-existent file returns 404', function () {
-    $this->postJson('/api/files/nonexistent123/download')->assertNotFound();
+    $this->postJson(signedDownloadUrl('nonexistent123'))->assertNotFound();
+});
+
+test('a file id alone is not enough to download', function () {
+    $secret = ($this->createFileSecret)();
+
+    $this->postJson("/api/files/{$secret->shared_file_id}/download")->assertForbidden();
+
+    expect(SharedFile::find($secret->shared_file_id))->not->toBeNull();
+});
+
+test('a signature for one file does not unlock another', function () {
+    $secret = ($this->createFileSecret)();
+    $other = ($this->createFileSecret)();
+    $foreignUrl = str_replace($secret->shared_file_id, $other->shared_file_id, signedDownloadUrl($secret->shared_file_id));
+
+    $this->postJson($foreignUrl)->assertForbidden();
+});
+
+test('download URLs expire after a day', function () {
+    $secret = ($this->createFileSecret)();
+    $url = signedDownloadUrl($secret->shared_file_id);
+
+    $this->travel(1)->days();
+    $this->travel(1)->minutes();
+
+    $this->postJson($url)->assertForbidden();
 });
 
 // --- Password protected file secret ---
@@ -573,7 +604,7 @@ test('E2E crypto round-trip: PHP mimics JS encrypt → upload → download → d
         'password' => 'testpass',
     ]);
     $retrieveResponse->assertSuccessful();
-    $downloadFileId = $retrieveResponse->json('file_id');
+    $downloadFileId = $secret->shared_file_id;
 
     expect(Secret::find($secret->id))->toBeNull('Secret should be burned after retrieve');
     expect(SharedFile::find($downloadFileId))->not->toBeNull('SharedFile should survive for download');
@@ -582,7 +613,7 @@ test('E2E crypto round-trip: PHP mimics JS encrypt → upload → download → d
     $downloadedBytes = Storage::disk(config('features.file_disk'))->get($sharedFile->storage_path);
     $expectedEncryptedSize = $plaintextSize + ($totalChunks * 16);
 
-    $downloadResponse = $this->postJson("/api/files/{$downloadFileId}/download");
+    $downloadResponse = $this->postJson($retrieveResponse->json('file_download_url'));
     $downloadResponse->assertSuccessful();
     expect($downloadResponse->headers->get('X-Client-Encrypted'))->toBe('1');
     expect($downloadResponse->headers->get('X-Encryption-Salt'))->toBe($saltB64);
@@ -660,4 +691,56 @@ test('DeleteStorageObject job removes file from disk', function () {
     $job->handle();
 
     Storage::disk($disk)->assertMissing('shared-files/test-cleanup.enc');
+});
+
+// --- Upload ownership ---
+
+test('only the user who started an upload can add chunks to it or complete it', function () {
+    $uploadId = $this->postJson('/api/files/initiate', [
+        'name' => 'mine.pdf',
+        'mime_type' => 'application/pdf',
+        'size' => 1024,
+        'total_chunks' => 1,
+        'encryption_salt' => base64_encode(random_bytes(16)),
+        'client_iv' => base64_encode(random_bytes(12)),
+    ])->assertCreated()->json('upload_id');
+
+    $this->actingAs(User::factory()->create());
+
+    $this->postJson("/api/files/{$uploadId}/chunk", [
+        'chunk_index' => 0,
+        'chunk' => UploadedFile::fake()->createWithContent('chunk', random_bytes(1040)),
+    ])->assertNotFound();
+    $this->postJson("/api/files/{$uploadId}/complete")->assertNotFound();
+
+    expect(PendingUpload::find($uploadId)->received_chunks)->toBe(0);
+});
+
+// --- Download headers ---
+
+test('download names are encoded safely in Content-Disposition', function (string $originalName, string $expectedFragment) {
+    $secret = ($this->createFileSecret)([], ['name' => $originalName]);
+
+    $disposition = $this->postJson(signedDownloadUrl($secret->shared_file_id))
+        ->assertSuccessful()
+        ->headers->get('Content-Disposition');
+
+    expect($disposition)->toStartWith('attachment;')
+        ->toContain($expectedFragment)
+        ->not->toContain("\n");
+})->with([
+    'plain' => ['report.pdf', 'filename=report.pdf'],
+    'quotes' => ['my "quoted" file.pdf', 'filename="my \\"quoted\\" file.pdf"'],
+    'unicode' => ['résumé.pdf', "filename*=utf-8''r%C3%A9sum%C3%A9.pdf"],
+]);
+
+test('API responses are never cached', function () {
+    $secret = ($this->createFileSecret)();
+
+    $this->getJson("/api/secrets/{$secret->id}/check")->assertHeader('Cache-Control', 'no-store, private');
+
+    $retrieve = $this->postJson("/api/secrets/{$secret->id}/retrieve", ['password' => 'testpassword'])
+        ->assertHeader('Cache-Control', 'no-store, private');
+
+    $this->postJson($retrieve->json('file_download_url'))->assertHeader('Cache-Control', 'no-store, private');
 });

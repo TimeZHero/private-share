@@ -12,7 +12,6 @@ class SharedFileObserver
     {
         Log::info('SharedFile created', [
             'id' => $sharedFile->id,
-            'original_name' => $sharedFile->original_name,
             'size' => $sharedFile->size,
         ]);
     }

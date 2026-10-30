@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
+use App\Enums\RateLimit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,36 +22,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->configureRateLimiting();
-    }
+        foreach (RateLimit::cases() as $rateLimit) {
+            RateLimiter::for($rateLimit->value, $rateLimit->limitFor(...));
+        }
 
-    /**
-     * Configure rate limiters.
-     */
-    protected function configureRateLimiting(): void
-    {
-        RateLimiter::for('secrets', function (Request $request) {
-            return Limit::perMinute(30)->by($request->ip());
-        });
-
-        RateLimiter::for('secret-password', function (Request $request) {
-            $secretId = $request->route('secret')?->id ?? $request->route('secret') ?? 'unknown';
-
-            return [
-                Limit::perMinute(5)->by($request->ip().':'.$secretId)->response(function () {
-                    return response()->json([
-                        'error' => 'rate_limited',
-                        'message' => 'Too many password attempts. Please wait before trying again.',
-                    ], 429);
-                }),
-                Limit::perMinute(20)->by($request->ip())->response(function () {
-                    return response()->json([
-                        'error' => 'rate_limited',
-                        'message' => 'Too many requests. Please wait before trying again.',
-                    ], 429);
-                }),
-            ];
-        });
-
+        EnsureFeaturesAreActive::whenInactive(fn () => abort(404));
     }
 }

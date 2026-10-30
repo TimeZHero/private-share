@@ -34,6 +34,11 @@ class EnsureAuthenticated
 
     private function hasValidGuestSession(Request $request): bool
     {
+        // API calls from outside the SPA (no Sanctum stateful origin) carry no session.
+        if (! $request->hasSession()) {
+            return false;
+        }
+
         $guestLinkId = $request->session()->get('guest_link_id');
         $expiresAt = $request->session()->get('guest_link_expires_at');
 
