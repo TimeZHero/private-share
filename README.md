@@ -50,6 +50,25 @@ sail artisan test
 
 Customize branding via environment variables or `config/branding.php`:
 
+### Going Live
+
+Before exposing an instance, check:
+
+- **Trusted proxies.** Rate limiting (including password brute-force protection) is keyed on the client IP. Outside `APP_ENV=local`, `X-Forwarded-*` headers are ignored unless `TRUSTED_PROXIES` lists the reverse proxies in front of the app:
+    - Nothing in front of the app: leave it empty.
+    - Reverse proxy on a private network (nginx, Traefik, Docker networks, a load balancer in your VPC): `TRUSTED_PROXIES=PRIVATE_SUBNETS`, or the exact IPs/CIDRs.
+    - Public CDN (Cloudflare, CloudFront…): list the CDN's published IP ranges plus any proxy hops behind it.
+
+    If it is wrong, every visitor appears to come from the proxy and shares one rate-limit bucket. Never use `*`: it lets any client pick its own IP through `X-Forwarded-For` and bypass the limits.
+
+- **Environment.** `APP_URL` set to the exact public URL (scheme, host and port): with authentication enabled, the API only accepts the browser's session from that origin, so a mismatch makes sharing fail with 401. `APP_ENV=production`, `APP_DEBUG=false`, a fresh `APP_KEY`, `SESSION_SECURE_COOKIE=true`, HTTPS with HSTS at the edge.
+- **Content Security Policy.** The app only lets its scripts connect to itself and to the S3 bucket configured as `FILE_DISK`, so injected code cannot ship keys elsewhere. If downloads go through another host (a `temporary_url` CDN in front of the bucket, for example), add it to `CSP_CONNECT_SRC`. Headers are sent by the app (`X-Frame-Options: SAMEORIGIN`, `nosniff`, CSP); a reverse proxy adding the same values is harmless, conflicting ones are not.
+- **Who can sign in** (when `FEATURE_AUTH=true`). List the Google Workspace domains in `AUTH_ALLOWED_DOMAINS` (e.g. `example.com,partner.io`), matched exactly. Only verified accounts managed by one of those Workspaces get in. An empty list means nobody can sign in.
+
+    > **Upgrading:** `AUTH_ALLOWED_EMAILS` (regex patterns) is no longer supported. While it is still set, sign-in stays closed; move your domains to `AUTH_ALLOWED_DOMAINS` and remove it in the same deploy.
+
+- **Background processes.** Run the scheduler (`php artisan schedule:run` every minute) and a queue worker: expired secrets and downloaded cloud files are only deleted by them.
+
 ## License
 
 MIT
