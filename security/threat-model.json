@@ -191,7 +191,7 @@
                                 "text": "Sender"
                             },
                             "body": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -206,16 +206,16 @@
                             "description": "Creates a secret (text and/or file). Anonymous when FEATURE_AUTH is off, Google SSO user or guest-link holder when on.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "a625ff64-91dd-57e4-9ef1-b46115f98057",
                                     "title": "Share link intercepted in transit to the recipient",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Medium",
                                     "type": "Information disclosure",
                                     "description": "The full link carries both the secret ID and the decryption key (#fragment). Anyone who sees it (chat logs, email archives, forwarded messages, shoulder surfing) can open it before the recipient. The recipient only notices after the fact (secret already burned).",
-                                    "mitigation": "Accepted design trade-off. Encourage the optional password sent over a second channel. See the 'Password not bound to ciphertext' threat: the password only adds real protection once it becomes part of the key derivation.",
+                                    "mitigation": "Accepted risk (inherent to link-based sharing): whoever holds the full link holds the secret. Mitigations are the optional password sent over a second channel (protected by the per-client backoff and per-secret cap) and burn after reading, which makes an interception visible to the recipient.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 1,
@@ -1041,11 +1041,11 @@
                                 {
                                     "id": "e76bd9df-f3bd-5a07-be3c-5fa3e5626dc1",
                                     "title": "Malware distributed via encrypted files",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Medium",
                                     "type": "Tampering",
                                     "description": "Files are opaque ciphertext, so the server cannot scan them.",
-                                    "mitigation": "Accepted by design. Uploads are limited to authenticated users; keep size limits and quotas and log uploader identity.",
+                                    "mitigation": "Accepted risk (inherent to end-to-end encryption): the server cannot scan content it cannot read. Uploads require a signed-in user from an allowed Workspace domain (or a single-use guest link they issued), are rate limited, and every creation is attributable in the logs.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 46,
@@ -1351,12 +1351,12 @@
                                 "text": "File storage (local disk / S3 / GCS)"
                             },
                             "topLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             },
                             "bottomLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -1371,16 +1371,16 @@
                             "description": "Assembled encrypted files at shared-files/{uuid}.enc.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "d7b7e22a-ee36-5683-adc1-794a59a17065",
                                     "title": "Bucket misconfigured as public",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Medium",
                                     "type": "Information disclosure",
                                     "description": "A public or listable bucket exposes every stored ciphertext.",
-                                    "mitigation": "Block public access, keep the bucket private, grant the app least-privilege IAM (get/put/delete on the prefix), add a lifecycle rule.",
+                                    "mitigation": "Accepted risk (deployment concern): storage privacy is configured outside the app and depends on the FILE_DISK driver. README 'Going Live' > File storage explains it: local disk stays outside the web root; S3-compatible buckets stay private with public access blocked, least-privilege credentials on shared-files/, CORS GET only from APP_URL, optional 30-day lifecycle rule. Stored files are ciphertext either way.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 59,
@@ -1801,7 +1801,7 @@
                         "shape": "flow",
                         "attrs": {
                             "line": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "targetMarker": {
                                     "name": "block"
                                 },
@@ -1825,16 +1825,16 @@
                             "isEncrypted": true,
                             "isPublicNetwork": true,
                             "isBidirectional": false,
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "c8704705-ba7d-5838-aeb4-8b976d2055dd",
                                     "title": "Traffic intercepted without TLS enforcement",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Medium",
                                     "type": "Information disclosure",
                                     "description": "The app does not enforce HTTPS or send HSTS; TLS depends on the deployment.",
-                                    "mitigation": "Terminate TLS at the edge, redirect HTTP to HTTPS, send HSTS (OWASP Transport Layer Security Cheat Sheet).",
+                                    "mitigation": "Accepted risk (deployment concern): TLS termination, the HTTP to HTTPS redirect and HSTS belong to the reverse proxy, load balancer or CDN in front of the app, as described in README 'Going Live' > HTTPS. The app helps by defaulting session cookies to Secure outside local.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 67,
