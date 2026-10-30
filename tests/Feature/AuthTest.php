@@ -4,6 +4,7 @@ use App\Features\Authentication;
 use App\Features\FileUploads;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Pennant\Feature;
 use Laravel\Socialite\Facades\Socialite;
@@ -44,131 +45,109 @@ test('google redirect sends user to google', function () {
     expect($response->headers->get('Location'))->toContain('accounts.google.com');
 });
 
-test('google callback creates a new user and logs them in', function () {
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '123456789';
-    $socialiteUser->name = 'Test User';
-    $socialiteUser->email = 'test@example.com';
+function signInWithGoogle(string $email, ?string $hostedDomain = 'example.com', bool $verified = true, string $id = '123456789', string $name = 'Test User'): TestResponse
+{
+    $socialiteUser = (new SocialiteUser)->setRaw(array_filter([
+        'email_verified' => $verified,
+        'hd' => $hostedDomain,
+    ], fn ($value) => $value !== null));
+    $socialiteUser->id = $id;
+    $socialiteUser->name = $name;
+    $socialiteUser->email = $email;
     $socialiteUser->avatar = 'https://lh3.googleusercontent.com/avatar';
 
     $provider = Mockery::mock(GoogleProvider::class);
     $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
     Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
 
-    $response = $this->get('/auth/google/callback');
+    return test()->get('/auth/google/callback');
+}
 
-    $response->assertRedirect(route('home'));
-    expect(Auth::check())->toBeTrue();
-    expect(Auth::user()->email)->toBe('test@example.com');
-    expect(Auth::user()->provider)->toBe('google');
-    expect(Auth::user()->provider_id)->toBe('123456789');
-    expect(Auth::user()->avatar)->toBe('https://lh3.googleusercontent.com/avatar');
-
-    $this->assertDatabaseHas('users', [
-        'email' => 'test@example.com',
-        'provider' => 'google',
-        'provider_id' => '123456789',
-    ]);
-});
-
-test('google callback updates existing user on subsequent login', function () {
-    User::factory()->create([
-        'email' => 'existing@example.com',
-        'name' => 'Old Name',
-        'provider' => 'google',
-        'provider_id' => '111222333',
-    ]);
-
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '111222333';
-    $socialiteUser->name = 'New Name';
-    $socialiteUser->email = 'existing@example.com';
-    $socialiteUser->avatar = 'https://lh3.googleusercontent.com/new-avatar';
-
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
-    Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
-
-    $this->get('/auth/google/callback');
-
-    expect(User::count())->toBe(1);
-    expect(User::first()->name)->toBe('New Name');
-    expect(User::first()->avatar)->toBe('https://lh3.googleusercontent.com/new-avatar');
-});
-
-test('google callback rejects unauthorized email when patterns are set', function () {
-    config(['features.allowed_email_patterns' => ['/@allowed\.com$/i']]);
-
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '999888777';
-    $socialiteUser->name = 'Rejected User';
-    $socialiteUser->email = 'user@notallowed.com';
-    $socialiteUser->avatar = null;
-
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
-    Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
-
-    $response = $this->get('/auth/google/callback');
-
+function assertSignInRejected(TestResponse $response): void
+{
     $response->assertRedirect(route('login'));
-    $response->assertSessionHas('error', 'Your email is not authorized to access this application.');
-    expect(Auth::check())->toBeFalse();
-    $this->assertDatabaseMissing('users', ['email' => 'user@notallowed.com']);
+    $response->assertSessionHas('error', 'Your account is not authorized to access this application.');
+    expect(Auth::check())->toBeFalse()
+        ->and(User::count())->toBe(0);
+}
+
+describe('Google sign-in with allowed domains', function () {
+    beforeEach(function () {
+        config([
+            'features.allowed_email_domains' => ['example.com', 'partner.io'],
+            'features.legacy_allowed_email_patterns' => false,
+        ]);
+    });
+
+    test('a verified Workspace account on an allowed domain signs in', function () {
+        signInWithGoogle('test@example.com')->assertRedirect(route('home'));
+
+        expect(Auth::user()->email)->toBe('test@example.com')
+            ->and(Auth::user()->provider)->toBe('google')
+            ->and(Auth::user()->provider_id)->toBe('123456789')
+            ->and(Auth::user()->avatar)->toBe('https://lh3.googleusercontent.com/avatar');
+    });
+
+    test('any listed domain is accepted, case-insensitively', function () {
+        signInWithGoogle('User@Partner.IO', hostedDomain: 'partner.io')->assertRedirect(route('home'));
+    });
+
+    test('an existing user is updated on later sign-ins', function () {
+        User::factory()->create(['email' => 'existing@example.com', 'name' => 'Old Name', 'provider' => 'google', 'provider_id' => '111222333']);
+
+        signInWithGoogle('existing@example.com', id: '111222333', name: 'New Name');
+
+        expect(User::count())->toBe(1)
+            ->and(User::first()->name)->toBe('New Name');
+    });
+
+    test('other domains are rejected', function () {
+        assertSignInRejected(signInWithGoogle('user@notallowed.com', hostedDomain: 'notallowed.com'));
+    });
+
+    test('look-alike domains are rejected', function () {
+        assertSignInRejected(signInWithGoogle('user@example.com.evil.tld', hostedDomain: 'example.com.evil.tld'));
+        assertSignInRejected(signInWithGoogle('user@notexample.com', hostedDomain: 'notexample.com'));
+        assertSignInRejected(signInWithGoogle('user@sub.example.com', hostedDomain: 'sub.example.com'));
+    });
+
+    test('a personal Google account using a company address is rejected', function () {
+        assertSignInRejected(signInWithGoogle('user@example.com', hostedDomain: null));
+    });
+
+    test('an account managed by another Workspace is rejected', function () {
+        assertSignInRejected(signInWithGoogle('user@example.com', hostedDomain: 'other.org'));
+    });
+
+    test('an unverified email is rejected', function () {
+        assertSignInRejected(signInWithGoogle('user@example.com', verified: false));
+    });
+
+    test('the Google account picker is limited to the domain when only one is allowed', function () {
+        config(['features.allowed_email_domains' => ['example.com']]);
+
+        expect($this->get('/auth/google/redirect')->headers->get('Location'))->toContain('hd=example.com');
+    });
 });
 
-test('google callback allows authorized email when patterns are set', function () {
-    config(['features.allowed_email_patterns' => ['/@example\.com$/i']]);
+describe('Google sign-in misconfiguration fails closed', function () {
+    test('nobody can sign in when no domain is configured', function () {
+        config(['features.allowed_email_domains' => [], 'features.legacy_allowed_email_patterns' => false]);
 
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '444555666';
-    $socialiteUser->name = 'Allowed User';
-    $socialiteUser->email = 'user@example.com';
-    $socialiteUser->avatar = null;
+        assertSignInRejected(signInWithGoogle('anyone@example.com'));
+    });
 
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
-    Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
+    test('nobody can sign in while the old regex setting is still present', function () {
+        config(['features.allowed_email_domains' => ['example.com'], 'features.legacy_allowed_email_patterns' => true]);
 
-    $response = $this->get('/auth/google/callback');
+        assertSignInRejected(signInWithGoogle('test@example.com'));
+    });
 
-    $response->assertRedirect(route('home'));
-    expect(Auth::check())->toBeTrue();
-    expect(Auth::user()->email)->toBe('user@example.com');
-});
+    test('nobody can sign in while an entry is not a plain domain', function () {
+        config(['features.allowed_email_domains' => ['example.com', '/@partner\\.io$/i'], 'features.legacy_allowed_email_patterns' => false]);
 
-test('google callback allows all emails when no patterns are set', function () {
-    config(['features.allowed_email_patterns' => []]);
-
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '777888999';
-    $socialiteUser->name = 'Any User';
-    $socialiteUser->email = 'anyone@anything.org';
-    $socialiteUser->avatar = null;
-
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
-    Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
-
-    $this->get('/auth/google/callback');
-    expect(Auth::check())->toBeTrue();
-});
-
-test('google callback handles multiple email patterns', function () {
-    config(['features.allowed_email_patterns' => ['/@example\.com$/i', '/@partner\.io$/i']]);
-
-    $socialiteUser = new SocialiteUser;
-    $socialiteUser->id = '101010101';
-    $socialiteUser->name = 'Partner User';
-    $socialiteUser->email = 'user@partner.io';
-    $socialiteUser->avatar = null;
-
-    $provider = Mockery::mock(GoogleProvider::class);
-    $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
-    Socialite::shouldReceive('driver')->with('google')->once()->andReturn($provider);
-
-    $this->get('/auth/google/callback');
-    expect(Auth::check())->toBeTrue();
+        assertSignInRejected(signInWithGoogle('test@example.com'));
+    });
 });
 
 test('logout clears session and redirects', function () {

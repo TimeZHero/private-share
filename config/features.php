@@ -14,22 +14,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Allowed Email Patterns
+    | Allowed Email Domains
     |--------------------------------------------------------------------------
     |
-    | An array of regex patterns that an OAuth user's email must match against
-    | to be allowed to log in. If empty, all emails are allowed.
-    |
-    | Examples:
-    |   - "/@example\.com$/i"            → only @example.com domain
-    |   - "/@(example|agency)\.com$/i"   → multiple domains
-    |   - "/^admin@example\.com$/i"      → exact email match
-    |
-    | Set via AUTH_ALLOWED_EMAILS as a comma-separated list of patterns.
+    | Google Workspace domains whose accounts may sign in, matched exactly
+    | (no subdomains, no patterns). Comma-separated in AUTH_ALLOWED_DOMAINS,
+    | e.g. "example.com,partner.io". Empty means nobody can sign in.
     |
     */
-    'allowed_email_patterns' => array_filter(
-        array_map('trim', explode(',', env('AUTH_ALLOWED_EMAILS', ''))),
-    ),
+    'allowed_email_domains' => array_values(array_filter(array_map(
+        static fn (string $domain): string => strtolower(ltrim(trim($domain), '@')),
+        explode(',', (string) env('AUTH_ALLOWED_DOMAINS', '')),
+    ))),
+
+    // The old regex setting must be removed: sign-in stays closed while it is set.
+    'legacy_allowed_email_patterns' => filled(env('AUTH_ALLOWED_EMAILS')),
 
 ];
