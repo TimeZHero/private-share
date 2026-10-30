@@ -16,7 +16,7 @@ class DeleteExpiredSecretsCommand extends Command
     public function handle(): int
     {
         $deletedSecrets = 0;
-        Secret::olderThan(30)->chunkById(100, function ($secrets) use (&$deletedSecrets) {
+        Secret::olderThan(Secret::LIFETIME_DAYS)->chunkById(100, function ($secrets) use (&$deletedSecrets) {
             foreach ($secrets as $secret) {
                 $secret->delete();
                 $deletedSecrets++;
@@ -25,7 +25,7 @@ class DeleteExpiredSecretsCommand extends Command
         $this->info("Deleted {$deletedSecrets} expired secrets.");
 
         $deletedFiles = 0;
-        SharedFile::olderThan(30)->chunkById(100, function ($files) use (&$deletedFiles) {
+        SharedFile::olderThan(Secret::LIFETIME_DAYS)->chunkById(100, function ($files) use (&$deletedFiles) {
             foreach ($files as $file) {
                 $file->delete();
                 $deletedFiles++;

@@ -519,3 +519,24 @@ describe('Header Security', function () {
         expect($cacheControl)->toContain('max-age=0');
     });
 });
+
+describe('Expiry at read time', function () {
+    test('a secret past its lifetime is gone even if cleanup has not run yet', function () {
+        $secret = Secret::factory()->create();
+        $this->travel(Secret::LIFETIME_DAYS)->days();
+        $this->travel(1)->minutes();
+
+        $this->get("/{$secret->id}")->assertNotFound();
+        $this->getJson("/api/secrets/{$secret->id}/check")->assertNotFound();
+        $this->postJson("/api/secrets/{$secret->id}/retrieve")->assertNotFound();
+
+        expect(Secret::find($secret->id))->not->toBeNull();
+    });
+
+    test('a secret within its lifetime is still served', function () {
+        $secret = Secret::factory()->create();
+        $this->travel(Secret::LIFETIME_DAYS - 1)->days();
+
+        $this->getJson("/api/secrets/{$secret->id}/check")->assertSuccessful();
+    });
+});
