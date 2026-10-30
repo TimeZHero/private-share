@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Tracks whether a file is being dragged over the browser window and
@@ -10,25 +10,29 @@ import { useCallback, useEffect, useState } from 'react';
  */
 export function useFileDrop(onFile: (file: File) => void) {
     const [isDraggingOverWindow, setIsDraggingOverWindow] = useState(false);
+    const enterCountRef = useRef(0);
+
+    const resetDragState = useCallback(() => {
+        enterCountRef.current = 0;
+        setIsDraggingOverWindow(false);
+    }, []);
 
     useEffect(() => {
-        let enterCount = 0;
-
         const hasFiles = (event: DragEvent) =>
             event.dataTransfer?.types.includes('Files') ?? false;
 
         const handleDragEnter = (event: DragEvent) => {
             if (!hasFiles(event)) return;
             event.preventDefault();
-            enterCount++;
-            if (enterCount === 1) setIsDraggingOverWindow(true);
+            enterCountRef.current++;
+            if (enterCountRef.current === 1) setIsDraggingOverWindow(true);
         };
 
         const handleDragLeave = (event: DragEvent) => {
             if (!hasFiles(event)) return;
             event.preventDefault();
-            enterCount--;
-            if (enterCount === 0) setIsDraggingOverWindow(false);
+            enterCountRef.current--;
+            if (enterCountRef.current === 0) setIsDraggingOverWindow(false);
         };
 
         const handleDragOver = (event: DragEvent) => {
@@ -36,23 +40,18 @@ export function useFileDrop(onFile: (file: File) => void) {
             event.preventDefault();
         };
 
-        const handleDrop = () => {
-            enterCount = 0;
-            setIsDraggingOverWindow(false);
-        };
-
         window.addEventListener('dragenter', handleDragEnter);
         window.addEventListener('dragleave', handleDragLeave);
         window.addEventListener('dragover', handleDragOver);
-        window.addEventListener('drop', handleDrop);
+        window.addEventListener('drop', resetDragState);
 
         return () => {
             window.removeEventListener('dragenter', handleDragEnter);
             window.removeEventListener('dragleave', handleDragLeave);
             window.removeEventListener('dragover', handleDragOver);
-            window.removeEventListener('drop', handleDrop);
+            window.removeEventListener('drop', resetDragState);
         };
-    }, []);
+    }, [resetDragState]);
 
     const dropZoneProps = {
         onDragOver: useCallback((event: React.DragEvent) => {
@@ -64,10 +63,12 @@ export function useFileDrop(onFile: (file: File) => void) {
             (event: React.DragEvent) => {
                 event.preventDefault();
                 event.stopPropagation();
+                // stopPropagation keeps the window drop listener from firing, so reset here too.
+                resetDragState();
                 const file = event.dataTransfer.files?.[0];
                 if (file) onFile(file);
             },
-            [onFile],
+            [onFile, resetDragState],
         ),
     };
 

@@ -479,6 +479,7 @@ export function SecretEditor({
 
             {fileUploadsEnabled && isDraggingOverWindow && !selectedFile && (
                 <div
+                    data-testid="file-drop-overlay"
                     className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
                     {...dropZoneProps}
                 >
@@ -634,6 +635,7 @@ function FileAttachment({
                     <button
                         type="button"
                         onClick={onFileRemove}
+                        aria-label="Remove file"
                         className="relative text-[var(--color-text)]/60 transition-colors hover:text-[var(--color-text)]"
                     >
                         <svg

@@ -85,6 +85,41 @@ describe('File Upload Drag & Drop', function () {
             ->assertDontSee('Drop your file to attach');
     });
 
+    it('does not reopen the overlay after a dropped file is cleared', function () {
+        $page = visit('/');
+
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]');
+
+        $page->script(<<<'JS'
+            const enterEvent = new DragEvent('dragenter', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: new DataTransfer()
+            });
+            enterEvent.dataTransfer.items.add(new File([''], 'test.txt', { type: 'text/plain' }));
+            window.dispatchEvent(enterEvent);
+        JS);
+
+        $page->waitForText('Drop your file to attach');
+
+        $page->script(<<<'JS'
+            const dropEvent = new DragEvent('drop', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: new DataTransfer()
+            });
+            dropEvent.dataTransfer.items.add(new File(['secret'], 'dropped.txt', { type: 'text/plain' }));
+            document.querySelector('[data-testid="file-drop-overlay"]').dispatchEvent(dropEvent);
+        JS);
+
+        $page->waitForText('dropped.txt')
+            ->click('[aria-label="Remove file"]')
+            ->wait(1)
+            ->assertSee('Drag & drop a file or')
+            ->assertDontSee('Drop your file to attach');
+    });
+
     it('has no JavaScript errors on the home page with file uploads enabled', function () {
         $page = visit('/');
 
