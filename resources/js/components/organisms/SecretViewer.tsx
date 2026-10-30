@@ -538,7 +538,7 @@ function ErrorView({
                             onChange={(event) =>
                                 onRetryKeyChange(event.target.value)
                             }
-                            placeholder="Enter key (e.g., Ab3xK9mZ) or paste full link"
+                            placeholder="Paste the full link or the key after #"
                             className="font-mono"
                             onKeyDown={(event) =>
                                 event.key === 'Enter' && onRetry()

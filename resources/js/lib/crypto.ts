@@ -5,16 +5,23 @@ const FILE_CHUNK_SIZE = 8 * 1024 * 1024;
 const GCM_TAG_LENGTH = 16;
 const ENCRYPTED_CHUNK_SIZE = FILE_CHUNK_SIZE + GCM_TAG_LENGTH;
 
+const KEY_BYTES = 16;
+// Links created before the 128-bit key keep working until they expire.
+const LEGACY_KEY_PATTERN = /^[A-Za-z0-9]{8}$/;
+const KEY_PATTERN = /^[A-Za-z0-9_-]{22}$/;
+
 export { ENCRYPTED_CHUNK_SIZE, FILE_CHUNK_SIZE, GCM_TAG_LENGTH };
 
 export function generateKey(): string {
-    const chars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let key = '';
-    for (let index = 0; index < 8; index++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return key;
+    const bytes = crypto.getRandomValues(new Uint8Array(KEY_BYTES));
+    return btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+export function isValidKey(key: string): boolean {
+    return KEY_PATTERN.test(key) || LEGACY_KEY_PATTERN.test(key);
 }
 
 export async function deriveKeyWithSalt(
