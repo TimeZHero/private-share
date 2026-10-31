@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Features\Authentication;
 use App\Features\FileUploads;
 use App\Models\Secret;
 use Illuminate\Http\RedirectResponse;
@@ -14,11 +15,9 @@ class PageController extends Controller
 {
     public function home(): InertiaResponse
     {
-        $fileFeatureActive = Feature::active(FileUploads::class);
-        $isAuthenticated = auth()->check();
-
+        // With Authentication on, EnsureAuthenticated only lets users and guests reach this page.
         return Inertia::render('Home', [
-            'fileUploadsEnabled' => $fileFeatureActive && $isAuthenticated,
+            'fileUploadsEnabled' => Feature::active(FileUploads::class) && Feature::active(Authentication::class),
             'maxSizeGb' => config('features.file_max_size_gb'),
         ]);
     }

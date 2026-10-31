@@ -15,6 +15,7 @@ class PendingUpload extends Model
     protected $fillable = [
         'id',
         'user_id',
+        'guest_link_id',
         'original_name',
         'mime_type',
         'total_size',

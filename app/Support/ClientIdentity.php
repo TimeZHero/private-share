@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 final class ClientIdentity
 {
     /**
-     * Key for per-client limits: the account when signed in, otherwise the network.
+     * Key for per-client limits: the account when signed in, the guest link for
+     * guest sessions, otherwise the network.
      */
     public static function of(Request $request): string
     {
@@ -15,6 +16,12 @@ final class ClientIdentity
 
         if ($user !== null) {
             return "user:{$user->getAuthIdentifier()}";
+        }
+
+        $guestLinkId = $request->hasSession() ? $request->session()->get('guest_link_id') : null;
+
+        if ($guestLinkId !== null) {
+            return "guest:{$guestLinkId}";
         }
 
         return 'ip:'.self::network((string) $request->ip());

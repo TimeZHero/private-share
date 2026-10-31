@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\DeleteStorageObject;
 use App\Models\PendingUpload;
 use App\Models\SharedFile;
+use App\Support\Uploader;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
@@ -47,7 +48,7 @@ class SharedFileController extends Controller
 
         $pendingUpload = PendingUpload::create([
             'id' => $uploadId,
-            'user_id' => $request->user()->id,
+            ...Uploader::from($request)->attributes(),
             'original_name' => $request->input('name'),
             'mime_type' => $request->input('mime_type'),
             'total_size' => $request->integer('size'),
