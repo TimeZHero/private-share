@@ -5,6 +5,7 @@ use App\Features\FileUploads;
 use App\Models\PendingUpload;
 use App\Models\SharedFile;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Session\EncryptedStore;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -139,4 +140,11 @@ test('the upload temp directory is private to the app user', function () {
 test('sessions are always encrypted at rest', function () {
     expect(config('session.encrypt'))->toBeTrue()
         ->and(app('session')->driver())->toBeInstanceOf(EncryptedStore::class);
+});
+
+test('scheduled tasks run on one server only, even when several containers share the cache', function () {
+    $events = app(Schedule::class)->events();
+
+    expect($events)->not->toBeEmpty()
+        ->and(collect($events)->every(fn ($event) => $event->onOneServer))->toBeTrue();
 });
