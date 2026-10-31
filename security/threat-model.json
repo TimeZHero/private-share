@@ -1476,12 +1476,12 @@
                                 "text": "Application logs"
                             },
                             "topLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             },
                             "bottomLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -1496,16 +1496,16 @@
                             "description": "Laravel log channel: secret created/retrieved/deleted, shared file created/deleted.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "c464b3d9-7635-58ad-a305-4a8e6a53fc27",
                                     "title": "Personal data kept in logs",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "Recipient IPs (and today file names) are logged with no defined retention.",
-                                    "mitigation": "Define log rotation/retention in the deployment's log pipeline. File names are no longer logged; client IPs, user ids and guest link ids are, by design, for abuse response.",
+                                    "mitigation": "Accepted risk (deployment concern): client IPs, user ids and guest link ids are logged on purpose for abuse response; file names, content, keys and passwords never are. Retention and rotation are set by whoever runs the instance (log channel or the platform's log pipeline).",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 62,
@@ -1514,11 +1514,11 @@
                                 {
                                     "id": "2b775900-d888-5094-b0df-b2aa271746b7",
                                     "title": "Logs tampered or deleted",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Repudiation",
                                     "description": "Local log files can be edited by anyone with host access.",
-                                    "mitigation": "Ship logs to a centralised, append-only sink in production.",
+                                    "mitigation": "Accepted risk (deployment concern): only someone with host access can alter local logs, and they could do worse; shipping logs to an append-only external sink is an operator choice when logs are needed as evidence.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 63,
