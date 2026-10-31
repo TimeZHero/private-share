@@ -409,7 +409,7 @@
                                 "text": "Browser SPA (React + Web Crypto)"
                             },
                             "body": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -424,7 +424,7 @@
                             "description": "Inertia/React app. Generates the share key, encrypts text (AES-256-GCM, PBKDF2-SHA256 100k) and files (8 MB chunks, per-chunk IV derived from a base IV), decrypts on view, renders markdown.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "0bdc818b-77fb-5f1e-bc6f-a2d2555943c6",
@@ -468,11 +468,11 @@
                                 {
                                     "id": "deac913d-72da-593b-b54d-7fbf2cd8dd1b",
                                     "title": "Remote resources in markdown track the recipient",
-                                    "status": "NotApplicable",
+                                    "status": "Mitigated",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "DOMPurify keeps <img src=https://...>. A sender can embed a tracking pixel that reveals the recipient's IP, user agent and viewing time to a third-party server.",
-                                    "mitigation": "Accepted risk: works as a read receipt for the sender's own secret; blocking it would also block legitimate external images.",
+                                    "mitigation": "img-src only allows the app, data:/blob: and Google avatars, so remote images in markdown secrets are not loaded and cannot act as tracking pixels.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 10,
@@ -507,11 +507,11 @@
                                 {
                                     "id": "f5da79c5-9adb-5faf-a001-cbf57f60c4c7",
                                     "title": "Missing browser security headers",
-                                    "status": "Open",
+                                    "status": "Mitigated",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "The app sets no Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy or Permissions-Policy (OWASP HTTP Headers Cheat Sheet). Without CSP, any injection or compromised dependency can exfiltrate keys freely.",
-                                    "mitigation": "Partially mitigated: AddSecurityHeaders sends X-Frame-Options, X-Content-Type-Options: nosniff and a CSP with connect-src and frame-ancestors. Remaining: script-src/style-src restrictions (needs Vite nonces), Referrer-Policy, Permissions-Policy; HSTS belongs at the TLS edge.",
+                                    "mitigation": "AddSecurityHeaders sends X-Frame-Options, nosniff, Referrer-Policy: no-referrer, Permissions-Policy and a full CSP (nonce-based script-src, restricted img/font/connect/form sources, object-src 'none', base-uri 'self'). HSTS belongs to the TLS edge (README 'Going Live').",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 13,
@@ -520,11 +520,11 @@
                                 {
                                     "id": "0753d9eb-6a05-5c62-b06b-147ee23d454c",
                                     "title": "Compromised frontend dependency or build pipeline",
-                                    "status": "Open",
-                                    "severity": "Medium",
+                                    "status": "Mitigated",
+                                    "severity": "Low",
                                     "type": "Tampering",
                                     "description": "Any malicious npm package bundled into the SPA runs with access to keys and plaintext.",
-                                    "mitigation": "Partially mitigated: Composer (policy.cooldown, 3 days) and npm (min-release-age=3) refuse freshly published releases, which is the window in which most malicious versions are caught and yanked; Composer also blocks versions with known advisories or flagged as malware by default. CSP connect-src only allows the app origin, the S3 bucket origin and CSP_CONNECT_SRC extras, so injected code cannot send keys to arbitrary hosts with fetch/XHR/WebSocket. Remaining: exfiltration through other channels (navigation, images) until script/img-src are restricted, and dependency review on updates.",
+                                    "mitigation": "Layered: Composer and npm refuse releases younger than 3 days; AGENTS.md 'Upgrading Dependencies' requires reviewing lockfile diffs and running composer/npm audit on every upgrade; the full CSP blocks injected inline scripts and pins every data channel (fetch, images, fonts, forms) to known origins. Accepted residual: code already shipped in the bundle can still navigate the page to another site with the key in the URL, which CSP cannot prevent.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 14,
@@ -533,11 +533,11 @@
                                 {
                                     "id": "0690f4e4-7b6b-5588-b43e-3d5b5f62e3f2",
                                     "title": "Plaintext lingers on the recipient device",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "Decrypted content stays in the DOM, JS memory and possibly the clipboard (copy button) after viewing.",
-                                    "mitigation": "Accepted. Optionally clear the view after a timeout and avoid auto-copy.",
+                                    "mitigation": "Accepted risk: once decrypted, content stays in the open tab (and the clipboard if copied) until the recipient closes it; auto-clearing would hurt usability more than it protects.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 15,
@@ -574,7 +574,7 @@
                                 "text": "Web pages (Laravel + Inertia)"
                             },
                             "body": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -589,7 +589,7 @@
                             "description": "GET /, /login, /{secret}, /guest/{guestLink}, auth routes. Shares auth/branding/feature props.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "5d5fd5dc-dd3f-558c-8d2f-9bade73a56ed",
@@ -607,11 +607,11 @@
                                 {
                                     "id": "6d30c7bf-8021-5056-b2f3-9a043a28a56f",
                                     "title": "Secret existence and creation time visible without the key",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "GET /{secret} returns createdAt for any valid ID, without the key or password.",
-                                    "mitigation": "Accepted (ID has ~71 bits of entropy). Optionally move createdAt behind retrieval.",
+                                    "mitigation": "Accepted risk: the secret id has ~71 bits of entropy, so only someone who already holds the link learns that it exists and when it was created.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 18,
@@ -700,7 +700,7 @@
                                 "text": "Secrets API"
                             },
                             "body": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -715,7 +715,7 @@
                             "description": "POST /api/secrets, GET /api/secrets/{id}/check, POST /api/secrets/{id}/retrieve. Stores ciphertext, gates on bcrypt password, burns on retrieval.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "c54024cf-6aac-536c-9bea-a464970a1b0d",
@@ -785,11 +785,11 @@
                                 {
                                     "id": "775e0d26-c626-5d36-85cc-7c062dff3a10",
                                     "title": "Anyone with the secret ID can burn it",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Denial of service",
                                     "description": "retrieve() needs no proof of key, so whoever obtains the ID (log line, partial link, cross-site POST since anonymous API calls have no CSRF token) can destroy the secret.",
-                                    "mitigation": "Accepted with low impact (ID is unguessable). Option: derive a retrieval token from the key client-side and require it on retrieve.",
+                                    "mitigation": "Accepted risk: requires the unguessable id (i.e. the link); a proof-of-key retrieval token is not worth the complexity.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 29,
@@ -891,7 +891,7 @@
                                 "text": "Files API"
                             },
                             "body": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -906,7 +906,7 @@
                             "description": "POST /api/files/initiate, /{upload}/chunk, /{upload}/complete (auth:sanctum) and POST /api/files/{file}/download (public). Assembles encrypted chunks and serves or signs the ciphertext once.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "2df4ab31-859c-536e-a521-1dbd4b6f4580",
@@ -937,11 +937,11 @@
                                 {
                                     "id": "6f3dc7bc-6be3-5ee0-87af-6a7be03b11ef",
                                     "title": "Disk exhaustion through chunk uploads",
-                                    "status": "Open",
+                                    "status": "Mitigated",
                                     "severity": "Medium",
                                     "type": "Denial of service",
                                     "description": "Chunk size is not validated (PHP allows 100 MB per request), total_chunks is unbounded and bytes received are only compared to the declared size at complete(). Pending temp files live 24 h and unattached SharedFiles 30 days, with no per-user quota.",
-                                    "mitigation": "Partially mitigated: chunk uploads are throttled (1000/min per user or guest link) and only signed-in users and guests they invited can upload. Remaining: a per-uploader storage quota (and optionally validating chunk sizes against the declared size).",
+                                    "mitigation": "Uploads are bounded end to end: the declared size is capped at FILE_MAX_SIZE_GB and must match the chunk count; each chunk is at most 8 MB + tag and the running total cannot exceed the declared size; UploadQuota reserves the declared size per user or guest link against FILE_DAILY_QUOTA_GB (default 100 GB per 24 h) when the upload starts; chunks are throttled at 1000/min; only signed-in users and guests they invited can upload; abandoned uploads are purged within 24 h. Covered by tests/Feature/UploadQuotaTest.php.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 38,
@@ -1015,11 +1015,11 @@
                                 {
                                     "id": "0d142835-7bc9-5162-9122-7decf8ba31ff",
                                     "title": "Signed download URL reused or leaked",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "Cloud signed URLs live 5 minutes and can be used repeatedly by anyone holding them; the object is deleted 10 minutes later by a queued job.",
-                                    "mitigation": "Shorten the URL lifetime and rely on bucket lifecycle rules as a backstop (see Queue worker). Content is ciphertext.",
+                                    "mitigation": "Accepted risk: signed URLs live 5 minutes and point at ciphertext; they are only handed to the recipient who just retrieved the secret, and the object is deleted 10 minutes later. (The lifetime only bounds when a download may start; a transfer already running continues, so shortening it would not break slow downloads either.)",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 44,
@@ -1028,11 +1028,11 @@
                                 {
                                     "id": "f7174bc5-0e2a-59d7-baca-baf1110ecb7d",
                                     "title": "File lost if the local download is interrupted",
-                                    "status": "Open",
+                                    "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Denial of service",
                                     "description": "On the local disk the original is deleted before the response is sent, so a failed transfer loses the file.",
-                                    "mitigation": "Accepted for burn-after-reading; document it to users.",
+                                    "mitigation": "Accepted risk: burn-after-reading deletes the file before it is streamed on the local disk driver; S3 deployments are unaffected because the browser downloads from the bucket.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 45,
@@ -1256,12 +1256,12 @@
                                 "text": "Database"
                             },
                             "topLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             },
                             "bottomLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -1276,7 +1276,7 @@
                             "description": "secrets (ciphertext, bcrypt password, shared_file_id), shared_files (plaintext name/mime/size, salt, IV), pending_uploads, users, sessions, guest_links, cache, jobs.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "35e9b0ca-61e3-55cd-8217-ee34a3530f1c",
@@ -1320,11 +1320,11 @@
                                 {
                                     "id": "d3773e9e-5d16-55ff-bb1a-be44881208ac",
                                     "title": "Sessions readable in the database",
-                                    "status": "Open",
+                                    "status": "Mitigated",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "SESSION_ENCRYPT is false, so session payloads (guest grants, flash messages) are readable by anyone with DB access.",
-                                    "mitigation": "Set SESSION_ENCRYPT=true in production; payloads hold no secrets today.",
+                                    "mitigation": "session.encrypt is hard-coded to true, so session payloads are encrypted with APP_KEY in any store.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 58,
@@ -1420,12 +1420,12 @@
                                 "text": "Local temp storage"
                             },
                             "topLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             },
                             "bottomLine": {
-                                "stroke": "red",
+                                "stroke": "#333333",
                                 "strokeWidth": 1.5,
                                 "strokeDasharray": null
                             }
@@ -1440,16 +1440,16 @@
                             "description": "storage/app/private/uploads/{uuid} (assembling chunks) and system temp copies served by local downloads.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
-                            "hasOpenThreats": true,
+                            "hasOpenThreats": false,
                             "threats": [
                                 {
                                     "id": "9427c039-e730-5e18-b811-e0e71eb1994f",
                                     "title": "Temp copies left behind after crashes",
-                                    "status": "Open",
+                                    "status": "Mitigated",
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "Assembling uploads and download copies stay on disk if a request dies; the uploads dir is created 0755.",
-                                    "mitigation": "Contents are ciphertext. Create the directory 0700 and sweep the system temp prefix ps_download_ periodically.",
+                                    "mitigation": "secrets:cleanup runs hourly: uploads idle for over an hour (by last chunk) are deleted with their chunk file, chunk files without an upload row and local-download copies older than an hour are swept, and the chunk directory is kept 0700. Contents are ciphertext either way.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 61,
@@ -1505,7 +1505,7 @@
                                     "severity": "Low",
                                     "type": "Information disclosure",
                                     "description": "Recipient IPs (and today file names) are logged with no defined retention.",
-                                    "mitigation": "Define log rotation/retention; remove file names (see Files API).",
+                                    "mitigation": "Define log rotation/retention in the deployment's log pipeline. File names are no longer logged; client IPs, user ids and guest link ids are, by design, for abuse response.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 62,
