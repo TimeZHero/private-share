@@ -75,7 +75,9 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan vendor:publish --provider=\"Laravel\\Sail\\SailServiceProvider\" --tag=sail-bin --force 2>/dev/null || true",
+            "chmod +x sail 2>/dev/null || true"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
