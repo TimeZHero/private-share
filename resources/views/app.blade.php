@@ -15,6 +15,7 @@
         <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:400,500" rel="stylesheet" />
 
         @inertiaHead
+        @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx'])
     </head>
     <body class="min-h-screen bg-[var(--color-surface)] text-[var(--color-text)] antialiased">
