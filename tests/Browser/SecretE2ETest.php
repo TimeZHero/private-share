@@ -49,6 +49,16 @@ describe('Secret Creation E2E', function () {
             ->assertSee('Preview');
     });
 
+    it('offers no image button, since the CSP blocks remote images', function () {
+        visit('/')
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Markdown')
+            ->waitForText('Editor')
+            ->assertPresent('button[title="Insert Table"]')
+            ->assertMissing('button[title="Image"]');
+    });
+
     it('returns to a plain editor when markdown is switched off', function () {
         $page = visit('/');
 

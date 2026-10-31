@@ -11,7 +11,6 @@ export type MarkdownAction =
     | 'italic'
     | 'strikethrough'
     | 'link'
-    | 'image'
     | 'code'
     | 'codeblock'
     | 'quote'
@@ -76,11 +75,6 @@ export function computeMarkdownInsertion(
                 insertion = '[link text](url)';
                 selectRange = [selectionStart + 1, selectionStart + 10];
             }
-            break;
-        case 'image':
-            insertion = `![${selectedText || 'alt text'}](image-url)`;
-            if (!selectedText)
-                selectRange = [selectionStart + 2, selectionStart + 10];
             break;
         case 'code':
             insertion = `\`${selectedText || 'code'}\``;
@@ -177,6 +171,5 @@ export const TOOLBAR_GROUPS: ToolbarAction[][] = [
     [
         { type: 'table', label: 'Insert Table', icon: 'table' },
         { type: 'hr', label: 'Horizontal Rule', icon: 'hr' },
-        { type: 'image', label: 'Image', icon: 'image' },
     ],
 ];
