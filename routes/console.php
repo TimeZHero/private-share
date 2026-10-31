@@ -2,4 +2,5 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('secrets:cleanup')->daily();
+// Hourly so dead uploads release their disk space quickly; every step is cheap and idempotent.
+Schedule::command('secrets:cleanup')->hourly();

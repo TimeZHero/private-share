@@ -33,11 +33,7 @@ class SharedFileController extends Controller
         $quota->reserve(ClientIdentity::of($request), $request->integer('size'));
 
         $uploadId = (string) Str::uuid();
-        $tempPath = storage_path("app/private/uploads/{$uploadId}");
-
-        if (! is_dir(dirname($tempPath))) {
-            mkdir(dirname($tempPath), 0755, true);
-        }
+        $tempPath = PendingUpload::prepareTemporaryDirectory()."/{$uploadId}";
 
         $pendingUpload = PendingUpload::create([
             'id' => $uploadId,
@@ -218,7 +214,7 @@ class SharedFileController extends Controller
 
     private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse|JsonResponse
     {
-        $tempFile = tempnam(sys_get_temp_dir(), 'ps_download_');
+        $tempFile = tempnam(sys_get_temp_dir(), SharedFile::DOWNLOAD_TEMP_PREFIX);
         $source = $disk->readStream($sharedFile->storage_path);
         $destination = fopen($tempFile, 'wb');
         stream_copy_to_stream($source, $destination);

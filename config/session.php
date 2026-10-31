@@ -47,7 +47,8 @@ return [
     |
     */
 
-    'encrypt' => env('SESSION_ENCRYPT', false),
+    // Always on: session payloads (guest grants, flash messages) must not be readable from the store.
+    'encrypt' => true,
 
     /*
     |--------------------------------------------------------------------------

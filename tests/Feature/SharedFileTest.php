@@ -651,7 +651,7 @@ test('E2E crypto round-trip: PHP mimics JS encrypt → upload → download → d
     expect(SharedFile::find($downloadFileId))->toBeNull('SharedFile should be burned after download');
 });
 
-test('cleanup command deletes stale pending uploads', function () {
+test('cleanup command deletes idle pending uploads', function () {
     $stale = PendingUpload::create([
         'id' => Str::uuid(),
         'original_name' => 'stale.bin',
@@ -662,7 +662,7 @@ test('cleanup command deletes stale pending uploads', function () {
     ]);
     DB::table('pending_uploads')
         ->where('id', $stale->id)
-        ->update(['created_at' => now()->subHours(25)]);
+        ->update(['created_at' => now()->subHours(25), 'updated_at' => now()->subMinutes(PendingUpload::IDLE_MINUTES + 1)]);
 
     $recent = PendingUpload::create([
         'id' => Str::uuid(),

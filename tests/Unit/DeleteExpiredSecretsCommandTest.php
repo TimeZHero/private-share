@@ -9,7 +9,7 @@ test('command has correct signature and description', function () {
     $command = app(DeleteExpiredSecretsCommand::class);
 
     expect($command->getName())->toBe('secrets:cleanup');
-    expect($command->getDescription())->toBe('Delete secrets, shared files older than 30 days, and stale pending uploads');
+    expect($command->getDescription())->toBe('Delete secrets and shared files older than 30 days, idle pending uploads, and leftover temp files');
 });
 
 test('command deletes only expired secrets (30+ days old)', function () {

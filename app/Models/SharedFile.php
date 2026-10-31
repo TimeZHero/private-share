@@ -18,7 +18,11 @@ class SharedFile extends Model
 
     /** @use HasFactory<SharedFileFactory> */
     use HasFactory;
+
     use HasShortId;
+
+    /** Prefix of the temporary copies served by local-disk downloads. */
+    public const string DOWNLOAD_TEMP_PREFIX = 'ps_download_';
 
     /** @var list<string> */
     protected $fillable = [
