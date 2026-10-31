@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\GoogleAccountPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,12 +12,19 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
-    public function redirect(string $provider): RedirectResponse
+    public function redirect(string $provider, GoogleAccountPolicy $policy): RedirectResponse
     {
-        return Socialite::driver($provider)->redirect();
+        $driver = Socialite::driver($provider);
+        $hostedDomain = $policy->hostedDomainHint();
+
+        if ($hostedDomain !== null) {
+            $driver->with(['hd' => $hostedDomain]);
+        }
+
+        return $driver->redirect();
     }
 
-    public function callback(string $provider): RedirectResponse
+    public function callback(string $provider, GoogleAccountPolicy $policy): RedirectResponse
     {
         try {
             $socialUser = Socialite::driver($provider)->user();
@@ -30,8 +38,8 @@ class AuthController extends Controller
             return redirect()->route('login')->with('error', 'Could not retrieve your email address.');
         }
 
-        if (! $this->isEmailAllowed($email)) {
-            return redirect()->route('login')->with('error', 'Your email is not authorized to access this application.');
+        if (! $policy->permits($socialUser)) {
+            return redirect()->route('login')->with('error', 'Your account is not authorized to access this application.');
         }
 
         $user = User::query()->updateOrCreate(
@@ -84,22 +92,5 @@ class AuthController extends Controller
         session()->regenerate();
 
         return redirect()->route('home');
-    }
-
-    protected function isEmailAllowed(string $email): bool
-    {
-        $patterns = config('features.allowed_email_patterns', []);
-
-        if (empty($patterns)) {
-            return true;
-        }
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $email)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

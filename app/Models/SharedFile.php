@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BurnsAfterReading;
 use App\Models\Concerns\HasShortId;
 use App\Observers\SharedFileObserver;
 use Database\Factories\SharedFileFactory;
@@ -13,10 +14,15 @@ use Illuminate\Database\Eloquent\Model;
 #[ObservedBy(SharedFileObserver::class)]
 class SharedFile extends Model
 {
+    use BurnsAfterReading;
+
     /** @use HasFactory<SharedFileFactory> */
     use HasFactory;
 
     use HasShortId;
+
+    /** Prefix of the temporary copies served by local-disk downloads. */
+    public const string DOWNLOAD_TEMP_PREFIX = 'ps_download_';
 
     /** @var list<string> */
     protected $fillable = [

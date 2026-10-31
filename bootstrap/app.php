@@ -2,11 +2,16 @@
 
 use App\Features\Authentication;
 use App\Features\FileUploads;
+use App\Http\Middleware\AddLogContext;
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\PreventResponseCaching;
+use App\Http\Responses\TooManyAttemptsResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
@@ -26,7 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance']);
 
+        $middleware->append(AddSecurityHeaders::class);
+
         $middleware->web(append: [
+            AddLogContext::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -34,9 +42,22 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
+        ], append: [
+            AddLogContext::class,
+            PreventResponseCaching::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            $headers = $exception->getHeaders();
+
+            return TooManyAttemptsResponse::make('rate_limited', 'Too many requests.', (int) $headers['Retry-After'], $headers);
+        });
+
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             if ($request->expectsJson()) {
                 return $response;

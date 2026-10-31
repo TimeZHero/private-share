@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BurnsAfterReading;
 use App\Models\Concerns\HasShortId;
 use App\Observers\SecretObserver;
 use Database\Factories\SecretFactory;
@@ -14,10 +15,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy(SecretObserver::class)]
 class Secret extends Model
 {
+    use BurnsAfterReading;
+
     /** @use HasFactory<SecretFactory> */
     use HasFactory;
 
     use HasShortId;
+
+    /**
+     * Unread secrets expire after this many days: refused at read time, deleted by secrets:cleanup.
+     */
+    public const int LIFETIME_DAYS = 30;
 
     /**
      * The attributes that are mass assignable.
@@ -80,5 +88,14 @@ class Secret extends Model
     public function scopeOlderThan(Builder $query, int $days): Builder
     {
         return $query->whereDate('created_at', '<', now()->subDays($days));
+    }
+
+    /**
+     * Route model binding never resolves expired secrets, even before cleanup removes them.
+     */
+    public function resolveRouteBindingQuery($query, $value, $field = null)
+    {
+        return parent::resolveRouteBindingQuery($query, $value, $field)
+            ->where('created_at', '>', now()->subDays(self::LIFETIME_DAYS));
     }
 }

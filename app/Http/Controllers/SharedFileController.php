@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InitiateUploadRequest;
 use App\Jobs\DeleteStorageObject;
 use App\Models\PendingUpload;
 use App\Models\SharedFile;
+use App\Services\UploadQuota;
+use App\Support\ClientIdentity;
+use App\Support\Uploader;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\JsonResponse;
@@ -24,29 +28,16 @@ class SharedFileController extends Controller
      * The client declares the file metadata and how many chunks it will send.
      * Returns an upload_id the client uses for subsequent chunk uploads.
      */
-    public function initiate(Request $request): JsonResponse
+    public function initiate(InitiateUploadRequest $request, UploadQuota $quota): JsonResponse
     {
-        $maxGb = config('features.file_max_size_gb', 10);
-        $maxBytes = $maxGb * 1024 * 1024 * 1024;
-
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'mime_type' => ['required', 'string', 'max:127'],
-            'size' => ['required', 'integer', 'min:1', "max:{$maxBytes}"],
-            'total_chunks' => ['required', 'integer', 'min:1'],
-            'encryption_salt' => ['required', 'string', 'max:64'],
-            'client_iv' => ['required', 'string', 'max:24'],
-        ]);
+        $quota->reserve(ClientIdentity::of($request), $request->integer('size'));
 
         $uploadId = (string) Str::uuid();
-        $tempPath = storage_path("app/private/uploads/{$uploadId}");
-
-        if (! is_dir(dirname($tempPath))) {
-            mkdir(dirname($tempPath), 0755, true);
-        }
+        $tempPath = PendingUpload::prepareTemporaryDirectory()."/{$uploadId}";
 
         $pendingUpload = PendingUpload::create([
             'id' => $uploadId,
+            ...Uploader::from($request)->attributes(),
             'original_name' => $request->input('name'),
             'mime_type' => $request->input('mime_type'),
             'total_size' => $request->integer('size'),
@@ -76,6 +67,15 @@ class SharedFileController extends Controller
 
         $chunkIndex = $request->integer('chunk_index');
         $expectedIndex = $pendingUpload->received_chunks;
+        $chunkBytes = (int) $request->file('chunk')->getSize();
+
+        if ($chunkBytes > PendingUpload::CHUNK_BYTES + PendingUpload::TAG_BYTES
+            || $pendingUpload->receivedBytes() + $chunkBytes > $pendingUpload->expectedStoredBytes()) {
+            return response()->json([
+                'error' => 'chunk_too_large',
+                'message' => 'This chunk is larger than the file size declared when the upload started.',
+            ], 422);
+        }
 
         if ($chunkIndex !== $expectedIndex) {
             return response()->json([
@@ -114,13 +114,7 @@ class SharedFileController extends Controller
             ], 409);
         }
 
-        $assembledSize = file_exists($pendingUpload->temp_path) ? filesize($pendingUpload->temp_path) : 0;
-        $isClientEncrypted = $pendingUpload->encryption_salt && $pendingUpload->client_iv;
-        $expectedSize = $isClientEncrypted
-            ? $pendingUpload->total_size + ($pendingUpload->total_chunks * 16)
-            : $pendingUpload->total_size;
-
-        if ($assembledSize !== $expectedSize) {
+        if ($pendingUpload->receivedBytes() !== $pendingUpload->expectedStoredBytes()) {
             @unlink($pendingUpload->temp_path);
             $pendingUpload->delete();
 
@@ -168,11 +162,13 @@ class SharedFileController extends Controller
      *
      * For cloud disks (S3): returns a JSON response with a short-lived
      * signed URL so the client downloads directly, bypassing the app
-     * server entirely. The model is deleted immediately; the S3 object
-     * is cleaned up by the scheduled cleanup command.
+     * server entirely. The row is claimed immediately; the object is
+     * deleted by a delayed job once the signed URL has expired.
      *
      * For local disk: downloads into a temp file, burns the original,
      * then serves the temp file (auto-deleted after sending).
+     *
+     * Either way only one of several concurrent requests wins the claim.
      */
     public function download(SharedFile $sharedFile): BinaryFileResponse|JsonResponse
     {
@@ -195,6 +191,10 @@ class SharedFileController extends Controller
 
     private function downloadViaSignedUrl(SharedFile $sharedFile, Filesystem $disk): JsonResponse
     {
+        if (! $sharedFile->claim()) {
+            return $this->alreadyDownloaded();
+        }
+
         $downloadUrl = $disk->temporaryUrl($sharedFile->storage_path, now()->addMinutes(5));
 
         $metadata = [
@@ -207,18 +207,14 @@ class SharedFileController extends Controller
             'original_name' => $sharedFile->original_name,
         ];
 
-        $storagePath = $sharedFile->storage_path;
-        $diskName = config('features.file_disk');
-        $sharedFile->deleteQuietly();
-
-        DeleteStorageObject::dispatch($storagePath, $diskName)->delay(now()->addMinutes(10));
+        DeleteStorageObject::dispatch($sharedFile->storage_path, config('features.file_disk'))->delay(now()->addMinutes(10));
 
         return response()->json($metadata);
     }
 
-    private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse
+    private function downloadViaLocalFile(SharedFile $sharedFile, Filesystem $disk): BinaryFileResponse|JsonResponse
     {
-        $tempFile = tempnam(sys_get_temp_dir(), 'ps_download_');
+        $tempFile = tempnam(sys_get_temp_dir(), SharedFile::DOWNLOAD_TEMP_PREFIX);
         $source = $disk->readStream($sharedFile->storage_path);
         $destination = fopen($tempFile, 'wb');
         stream_copy_to_stream($source, $destination);
@@ -227,14 +223,14 @@ class SharedFileController extends Controller
             fclose($source);
         }
 
-        $disk->delete($sharedFile->storage_path);
-        $sharedFile->delete();
+        if (! $sharedFile->burn()) {
+            @unlink($tempFile);
 
-        return response()->file($tempFile, [
+            return $this->alreadyDownloaded();
+        }
+
+        return response()->download($tempFile, $sharedFile->original_name, [
             'Content-Type' => 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="'.addslashes($sharedFile->original_name).'"',
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
             'X-Client-Encrypted' => $sharedFile->client_encrypted ? '1' : '0',
             'X-Encryption-Salt' => $sharedFile->encryption_salt ?? '',
             'X-Client-Iv' => $sharedFile->client_iv ?? '',
@@ -242,6 +238,14 @@ class SharedFileController extends Controller
             'X-Plaintext-Size' => (string) $sharedFile->size,
             'Access-Control-Expose-Headers' => 'X-Client-Encrypted, X-Encryption-Salt, X-Client-Iv, X-Original-Mime-Type, X-Plaintext-Size, Content-Disposition',
         ])->deleteFileAfterSend();
+    }
+
+    private function alreadyDownloaded(): JsonResponse
+    {
+        return response()->json([
+            'error' => 'already_downloaded',
+            'message' => 'This file has already been downloaded.',
+        ], 404);
     }
 
     private function supportsSignedUrls(Filesystem $disk): bool

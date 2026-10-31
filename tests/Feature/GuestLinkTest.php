@@ -48,55 +48,87 @@ describe('Guest Link Creation (API)', function () {
 });
 
 describe('Guest Link Access', function () {
-    it('redirects to home when accessing a valid signed guest link', function () {
+    it('shows a confirmation page without using up the link', function () {
         $guestLink = GuestLink::factory()->create();
 
-        $signedUrl = URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]);
+        $this->get(URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]))
+            ->assertSuccessful()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('GuestAccess')
+                ->has('acceptUrl')
+                ->where('expiresAt', $guestLink->expires_at->toIso8601String()));
 
-        $response = $this->get($signedUrl);
-
-        $response->assertRedirect(route('home'));
+        expect($guestLink->fresh()->used_at)->toBeNull()
+            ->and(session('guest_link_id'))->toBeNull();
     });
 
-    it('sets guest session data on valid access', function () {
+    it('starts a guest session when the guest continues', function () {
         $guestLink = GuestLink::factory()->create();
 
-        $signedUrl = URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]);
+        $this->post(URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]))
+            ->assertRedirect(route('home'));
 
-        $this->get($signedUrl);
+        expect(session('guest_link_id'))->toBe($guestLink->id)
+            ->and(session('guest_link_expires_at'))->toBe($guestLink->expires_at->toIso8601String())
+            ->and($guestLink->fresh()->used_at)->not->toBeNull();
+    });
 
-        expect(session('guest_link_id'))->toBe($guestLink->id);
-        expect(session('guest_link_expires_at'))->toBe($guestLink->expires_at->toIso8601String());
+    it('issues a fresh session id when the guest continues', function () {
+        $guestLink = GuestLink::factory()->create();
+        $this->startSession();
+        $sessionIdBefore = session()->getId();
+
+        $this->post(URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]));
+
+        expect(session()->getId())->not->toBe($sessionIdBefore);
+    });
+
+    it('works only once', function () {
+        $guestLink = GuestLink::factory()->create();
+        $acceptUrl = URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]);
+        $this->post($acceptUrl)->assertRedirect(route('home'));
+        session()->flush();
+
+        $this->post($acceptUrl)->assertStatus(410);
+        $this->get(URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]))
+            ->assertStatus(410)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Error')
+                ->where('message', 'This guest link has already been used.'));
+    });
+
+    it('sends the guest who already used the link straight home', function () {
+        $guestLink = GuestLink::factory()->create();
+        $this->post(URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]));
+
+        $this->get(URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]))
+            ->assertRedirect(route('home'));
     });
 
     it('rejects access with invalid signature', function () {
         $guestLink = GuestLink::factory()->create();
 
-        $response = $this->get('/guest/'.$guestLink->id.'?signature=invalid');
+        $this->get('/guest/'.$guestLink->id.'?signature=invalid')->assertForbidden();
+        $this->post('/guest/'.$guestLink->id.'?signature=invalid')->assertForbidden();
 
-        $response->assertForbidden();
+        expect($guestLink->fresh()->used_at)->toBeNull();
     });
 
     it('returns 410 for expired guest link and renders the branded error page', function () {
         $guestLink = GuestLink::factory()->expired()->create();
 
-        $signedUrl = URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]);
-
-        $response = $this->get($signedUrl);
-
-        $response->assertStatus(410)
+        $this->get(URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]))
+            ->assertStatus(410)
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Error')
                 ->where('status', 410)
                 ->where('message', 'This guest link has expired.'));
+
+        $this->post(URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]))->assertStatus(410);
     });
 
     it('returns 404 for non-existent guest link', function () {
-        $signedUrl = URL::signedRoute('guest.access', ['guestLink' => 'nonexistent']);
-
-        $response = $this->get($signedUrl);
-
-        $response->assertNotFound();
+        $this->get(URL::signedRoute('guest.access', ['guestLink' => 'nonexistent']))->assertNotFound();
     });
 });
 
@@ -137,7 +169,7 @@ describe('Guest Session on Home Page', function () {
             'guest_link_expires_at' => $guestLink->expires_at->toIso8601String(),
         ])->postJson('/api/secrets', [
             'content' => 'encrypted-guest-secret',
-        ]);
+        ], ['Referer' => 'http://localhost/']);
 
         $response->assertSuccessful();
         $response->assertJsonStructure(['id']);

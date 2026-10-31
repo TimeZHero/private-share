@@ -13,11 +13,12 @@ export interface ViewMachineState {
     errorDetail: string;
     requiresPassword: boolean;
     passwordError: string | null;
+    retrieveError: string | null;
     content: string | null;
     createdAt: string | null;
     markdownEnabled: boolean;
     hasFile: boolean;
-    fileId: string | null;
+    downloadUrl: string | null;
     fileInfo: FileInfo | null;
     encryptionKey: string | null;
 }
@@ -36,6 +37,8 @@ export interface SecretViewApi {
     ) => { valid: true; key: string } | { valid: false; error: string };
     isPasswordError: (error: unknown) => boolean;
     isNotFoundError: (error: unknown) => boolean;
+    isRateLimitError: (error: unknown) => error is Error;
+    forgetKeyFromUrl: () => void;
 }
 
 export const INITIAL_STATE: ViewMachineState = {
@@ -45,11 +48,12 @@ export const INITIAL_STATE: ViewMachineState = {
     errorDetail: '',
     requiresPassword: false,
     passwordError: null,
+    retrieveError: null,
     content: null,
     createdAt: null,
     markdownEnabled: false,
     hasFile: false,
-    fileId: null,
+    downloadUrl: null,
     fileInfo: null,
     encryptionKey: null,
 };
@@ -106,6 +110,8 @@ export class SecretViewMachine {
                     errorDetail:
                         'This secret has already been viewed or does not exist.',
                 });
+            } else if (this.api.isRateLimitError(error)) {
+                this.update({ phase: 'error', errorDetail: error.message });
             } else {
                 this.update({
                     phase: 'error',
@@ -124,7 +130,7 @@ export class SecretViewMachine {
             return;
         }
 
-        this.update({ passwordError: null });
+        this.update({ passwordError: null, retrieveError: null });
         await this.retrieveAndDecrypt(secretId, password);
     }
 
@@ -223,13 +229,14 @@ export class SecretViewMachine {
                         result.content,
                         this.savedKey!,
                     );
+                    this.api.forgetKeyFromUrl();
                     this.update({
                         phase: 'success',
                         content: decrypted,
                         createdAt: result.created_at,
                         markdownEnabled: result.markdown_enabled,
                         hasFile: result.has_file,
-                        fileId: result.file_id ?? null,
+                        downloadUrl: result.file_download_url ?? null,
                         fileInfo: this.checkData?.file ?? null,
                         encryptionKey: this.savedKey,
                     });
@@ -241,13 +248,14 @@ export class SecretViewMachine {
                     });
                 }
             } else {
+                this.api.forgetKeyFromUrl();
                 this.update({
                     phase: 'success',
                     content: null,
                     createdAt: result.created_at,
                     markdownEnabled: result.markdown_enabled,
                     hasFile: result.has_file,
-                    fileId: result.file_id ?? null,
+                    downloadUrl: result.file_download_url ?? null,
                     fileInfo: this.checkData?.file ?? null,
                     encryptionKey: this.savedKey,
                 });
@@ -258,6 +266,11 @@ export class SecretViewMachine {
                     phase: 'error',
                     errorDetail:
                         'This secret has already been viewed or does not exist.',
+                });
+            } else if (this.api.isRateLimitError(error)) {
+                this.update({
+                    phase: 'confirmation',
+                    retrieveError: error.message,
                 });
             } else if (this.api.isPasswordError(error)) {
                 const apiError = error as { data?: { message?: string } };

@@ -86,6 +86,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content Security Policy: extra connect-src origins
+    |--------------------------------------------------------------------------
+    |
+    | Browser scripts may only send requests to the app itself, the S3 bucket
+    | holding encrypted files and, locally, the Vite dev server. List any
+    | other origin they must reach as a comma-separated CSP_CONNECT_SRC.
+    |
+    */
+
+    'csp_connect_sources' => array_values(array_filter(
+        array_map(trim(...), explode(',', (string) env('CSP_CONNECT_SRC', ''))),
+    )),
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

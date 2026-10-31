@@ -2,6 +2,7 @@
 
 use App\Models\SharedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -83,4 +84,13 @@ test('size is cast to integer', function () {
 
     expect($file->size)->toBeInt();
     expect($file->size)->toBe(1048576);
+});
+
+test('creating a shared file never logs its name', function () {
+    Log::spy();
+
+    SharedFile::factory()->create(['original_name' => 'salaries-2026.xlsx']);
+
+    Log::shouldHaveReceived('info')
+        ->withArgs(fn (string $message, array $context) => $message === 'SharedFile created' && ! array_key_exists('original_name', $context));
 });

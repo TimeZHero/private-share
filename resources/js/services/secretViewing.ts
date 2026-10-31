@@ -1,5 +1,5 @@
 import { ApiError, apiGet, apiPost } from '@/lib/api';
-import { decryptContent } from '@/lib/crypto';
+import { decryptContent, isValidKey } from '@/lib/crypto';
 import type { SecretCheckResponse, SecretRetrieveResponse } from '@/types';
 
 export async function checkRequirements(
@@ -33,17 +33,30 @@ export function getEncryptionKeyFromHash():
     if (!hash || hash.length < 2) {
         return {
             valid: false,
-            error: 'No encryption key found in the URL. The link should end with #xxxxxxxx where xxxxxxxx is the 8-character key.',
+            error: 'No encryption key found in the URL. The link should end with # followed by the encryption key.',
         };
     }
     const encryptionKey = hash.substring(1);
-    if (encryptionKey.length !== 8) {
+    if (!isValidKey(encryptionKey)) {
         return {
             valid: false,
-            error: `Invalid encryption key length. Expected 8 characters, got ${encryptionKey.length}. Make sure you copied the complete URL.`,
+            error: 'Invalid encryption key. Make sure you copied the complete URL.',
         };
     }
     return { valid: true, key: encryptionKey };
+}
+
+/**
+ * Drops the decryption key from the address bar and the history entry once
+ * it is no longer needed.
+ */
+export function forgetKeyFromUrl(): void {
+    if (!window.location.hash) return;
+    history.replaceState(
+        history.state,
+        '',
+        window.location.pathname + window.location.search,
+    );
 }
 
 export function extractKeyFromInput(
@@ -54,10 +67,10 @@ export function extractKeyFromInput(
         const hashIndex = trimmed.indexOf('#');
         trimmed = trimmed.substring(hashIndex + 1);
     }
-    if (trimmed.length !== 8) {
+    if (!isValidKey(trimmed)) {
         return {
             valid: false,
-            error: `Invalid key length. Expected 8 characters, got ${trimmed.length}.`,
+            error: 'Invalid key. Paste the full link or the part after #.',
         };
     }
     return { valid: true, key: trimmed };
@@ -73,4 +86,8 @@ export function isPasswordError(error: unknown): boolean {
 
 export function isNotFoundError(error: unknown): boolean {
     return error instanceof ApiError && error.status === 404;
+}
+
+export function isRateLimitError(error: unknown): error is ApiError {
+    return error instanceof ApiError && error.status === 429;
 }

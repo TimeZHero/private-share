@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Events\SecretRetrieved;
 use App\Models\Secret;
+use App\Services\SecretPasswordAttempts;
+use App\Support\ClientIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 
 class SecretController extends Controller
 {
@@ -66,14 +69,19 @@ class SecretController extends Controller
     /**
      * Retrieve the secret content after confirmation/password verification.
      */
-    public function retrieve(Request $request, Secret $secret): JsonResponse
+    public function retrieve(Request $request, Secret $secret, SecretPasswordAttempts $passwordAttempts): JsonResponse
     {
         if ($secret->isPasswordProtected()) {
             $request->validate([
                 'password' => ['required', 'string'],
             ]);
 
+            $client = ClientIdentity::of($request);
+            $passwordAttempts->ensureAllowed($client, $secret);
+
             if (! Hash::check($request->password, $secret->password)) {
+                $passwordAttempts->recordFailure($client, $secret);
+
                 return response()->json([
                     'error' => 'invalid_password',
                     'message' => 'The password is incorrect.',
@@ -81,20 +89,29 @@ class SecretController extends Controller
             }
         }
 
-        $content = $secret->content;
-        $createdAt = $secret->created_at->format('M j, Y \a\t g:i A');
+        if (! $secret->burn()) {
+            return response()->json([
+                'error' => 'already_viewed',
+                'message' => 'This secret has already been viewed.',
+            ], 404);
+        }
 
         SecretRetrieved::dispatch($secret, $request->ip());
 
         $response = [
-            'content' => $content,
-            'created_at' => $createdAt,
+            'content' => $secret->content,
+            'created_at' => $secret->created_at->format('M j, Y \a\t g:i A'),
             'markdown_enabled' => $secret->markdown_enabled,
             'has_file' => $secret->hasFile(),
         ];
 
         if ($secret->hasFile()) {
-            $response['file_id'] = $secret->shared_file_id;
+            $response['file_download_url'] = URL::temporarySignedRoute(
+                'files.download',
+                now()->addDay(),
+                ['sharedFile' => $secret->shared_file_id],
+                absolute: false,
+            );
         }
 
         return response()->json($response);

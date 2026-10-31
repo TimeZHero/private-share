@@ -2,9 +2,11 @@ import {
     checkRequirements,
     decrypt,
     extractKeyFromInput,
+    forgetKeyFromUrl,
     getEncryptionKeyFromHash,
     isNotFoundError,
     isPasswordError,
+    isRateLimitError,
     retrieveSecret,
 } from '@/services/secretViewing';
 import {
@@ -28,6 +30,8 @@ function createMachine(
             extractKeyFromInput,
             isPasswordError,
             isNotFoundError,
+            isRateLimitError,
+            forgetKeyFromUrl,
         },
         onStateChange,
     );
@@ -75,7 +79,7 @@ export function useSecretViewing() {
             createdAt: state.createdAt,
             markdownEnabled: state.markdownEnabled,
             hasFile: state.hasFile,
-            fileId: state.fileId,
+            downloadUrl: state.downloadUrl,
             fileInfo: state.fileInfo,
             encryptionKey: state.encryptionKey,
         },
@@ -84,6 +88,7 @@ export function useSecretViewing() {
         errorDetail: state.errorDetail,
         requiresPassword: state.requiresPassword,
         passwordError: state.passwordError,
+        retrieveError: state.retrieveError,
         check,
         confirmAndRetrieve,
         retryDecryption,

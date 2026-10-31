@@ -49,6 +49,16 @@ describe('Secret Creation E2E', function () {
             ->assertSee('Preview');
     });
 
+    it('offers no image button, since the CSP blocks remote images', function () {
+        visit('/')
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->click('Markdown')
+            ->waitForText('Editor')
+            ->assertPresent('button[title="Insert Table"]')
+            ->assertMissing('button[title="Image"]');
+    });
+
     it('returns to a plain editor when markdown is switched off', function () {
         $page = visit('/');
 
@@ -137,6 +147,71 @@ describe('Secret Retrieval E2E', function () {
         $page->waitForText('View Secret')
             ->assertSee('View Secret')
             ->assertSee('Secrets are deleted after being viewed once');
+    });
+
+    it('shares with a 128-bit key and decrypts the link it produced', function () {
+        $page = visit('/');
+
+        $page->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->fill('#content', 'Round trip with a strong key')
+            ->click('Share Secret')
+            ->waitForText('Secret Created!');
+
+        $link = $page->value('input[readonly]');
+        expect($link)->toMatch('/#[A-Za-z0-9_-]{22}$/');
+
+        // visit() drops URL fragments, so the key goes through the retry field instead.
+        visit(parse_url($link, PHP_URL_PATH))
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->waitForText('View Secret')
+            ->click('View Secret')
+            ->waitForText('Decryption Failed')
+            ->fill('input[placeholder^="Paste the full link"]', $link)
+            ->click('Retry Decryption')
+            ->waitForText('Round trip with a strong key');
+    });
+
+    it('still decrypts links created with the legacy 8-character key', function () {
+        $legacyKey = 'Ab3xK9mZ';
+        $salt = random_bytes(16);
+        $iv = random_bytes(12);
+        $derivedKey = hash_pbkdf2('sha256', $legacyKey, $salt, 100000, 32, true);
+        $ciphertext = openssl_encrypt('Legacy link content', 'aes-256-gcm', $derivedKey, OPENSSL_RAW_DATA, $iv, $tag);
+
+        $secret = Secret::factory()->create([
+            'content' => base64_encode($salt.$iv.$ciphertext.$tag),
+        ]);
+
+        visit("/{$secret->id}")
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->waitForText('View Secret')
+            ->click('View Secret')
+            ->waitForText('Decryption Failed')
+            ->fill('input[placeholder^="Paste the full link"]', $legacyKey)
+            ->click('Retry Decryption')
+            ->waitForText('Legacy link content');
+    });
+
+    it('tells the recipient how long to wait after too many wrong passwords', function () {
+        $secret = Secret::factory()->withPassword('correct horse')->create();
+
+        $page = visit("/{$secret->id}")
+            ->waitForText('Sharing a secret')
+            ->click('[aria-label="Close"]')
+            ->waitForText('Password Required');
+
+        foreach (range(1, 5) as $attempt) {
+            $page->fill('input[type="password"]', "wrong {$attempt}")
+                ->click('View Secret')
+                ->waitForText('The password is incorrect.');
+        }
+
+        $page->fill('input[type="password"]', 'wrong 6')
+            ->click('View Secret')
+            ->waitForText('Too many wrong passwords. Try again in 1 minute.');
     });
 
     it('shows decryption error when encryption key is missing from URL', function () {

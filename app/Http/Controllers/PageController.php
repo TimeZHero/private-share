@@ -15,21 +15,15 @@ class PageController extends Controller
 {
     public function home(): InertiaResponse
     {
-        $fileFeatureActive = Feature::active(FileUploads::class);
-        $isAuthenticated = auth()->check();
-
+        // With Authentication on, EnsureAuthenticated only lets users and guests reach this page.
         return Inertia::render('Home', [
-            'fileUploadsEnabled' => $fileFeatureActive && $isAuthenticated,
+            'fileUploadsEnabled' => Feature::active(FileUploads::class) && Feature::active(Authentication::class),
             'maxSizeGb' => config('features.file_max_size_gb'),
         ]);
     }
 
     public function login(): InertiaResponse|RedirectResponse
     {
-        if (! Feature::active(Authentication::class)) {
-            abort(404);
-        }
-
         if (auth()->check()) {
             return redirect()->route('home');
         }

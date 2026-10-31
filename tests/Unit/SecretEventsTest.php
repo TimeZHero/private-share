@@ -1,10 +1,8 @@
 <?php
 
 use App\Events\SecretRetrieved;
-use App\Listeners\BurnSecret;
 use App\Models\Secret;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
 describe('SecretRetrieved Event', function () {
@@ -70,32 +68,5 @@ describe('SecretRetrieved Event', function () {
             });
 
         new SecretRetrieved($secret, null);
-    });
-});
-
-describe('BurnSecret Listener', function () {
-    test('listener deletes secret on event', function () {
-        $secret = Secret::factory()->create();
-        $secretId = $secret->id;
-
-        // Allow any log calls (creation, retrieval, deletion)
-        Log::shouldReceive('info')->zeroOrMoreTimes();
-
-        $event = new SecretRetrieved($secret, '127.0.0.1');
-
-        $listener = new BurnSecret;
-        $listener->handle($event);
-
-        expect(Secret::find($secretId))->toBeNull();
-    });
-
-    test('listener is attached to SecretRetrieved event', function () {
-        Event::fake([SecretRetrieved::class]);
-
-        $secret = Secret::factory()->create();
-
-        SecretRetrieved::dispatch($secret, '127.0.0.1');
-
-        Event::assertDispatched(SecretRetrieved::class);
     });
 });

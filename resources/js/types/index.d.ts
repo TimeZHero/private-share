@@ -76,6 +76,11 @@ export interface LoginPageProps extends SharedPageProps {
     googleRedirectUrl: string;
 }
 
+export interface GuestAccessPageProps extends SharedPageProps {
+    acceptUrl: string;
+    expiresAt: string;
+}
+
 export interface ErrorPageProps extends SharedPageProps {
     status: number;
     message: string;
@@ -103,5 +108,5 @@ export interface SecretRetrieveResponse {
     created_at: string;
     markdown_enabled: boolean;
     has_file: boolean;
-    file_id?: string;
+    file_download_url?: string;
 }
