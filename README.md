@@ -32,12 +32,39 @@ This project is **not a service**. Fork it and deploy your own instance for maxi
 
 ### Development
 
+The app runs at `https://<folder>.localhost` (e.g. `https://private-share.localhost`) through a shared [caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy), with Vite at `https://vite.<folder>.localhost` and Mailpit at `https://mailpit.<folder>.localhost`. No ports are published, so several projects or worktrees can run side by side.
+
+Once per machine, start the proxy and trust its certificate (macOS):
+
+```bash
+docker network create caddy
+docker run -d --name caddy --restart unless-stopped --network caddy \
+    -p 80:80 -p 443:443 -p 443:443/udp \
+    -e CADDY_INGRESS_NETWORKS=caddy \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v caddy_data:/data \
+    lucaslorentz/caddy-docker-proxy:ci-alpine
+```
+
+```bash
+docker cp caddy:/data/caddy/pki/authorities/local/root.crt /tmp/caddy-root.crt && security add-trusted-cert -r trustRoot -k ~/Library/Keychains/login.keychain-db /tmp/caddy-root.crt && rm /tmp/caddy-root.crt
+```
+
+Then:
+
 ```bash
 git clone git@github.com:TimeZHero/private-share.git
 cd private-share
-composer install
-sail up -d
+./sail up -d
 ```
+
+The repository ships the `sail` script, so no local `composer install` is needed first. To make `sail` pick it up automatically, add this alias to your shell profile:
+
+```bash
+alias sail='bash $([ -f sail ] && echo sail || echo vendor/bin/sail)'
+```
+
+The container runs `php artisan dev`: the web server, queue worker, scheduler, Vite and log tailing in one process (`sail logs -f` shows them all).
 
 ### Testing
 
