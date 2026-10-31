@@ -10,6 +10,10 @@ return [
 
     'file_max_size_gb' => (int) env('FILE_MAX_SIZE_GB', 10),
 
+    // File size each user or guest link may upload per 24 hours (as users see it, without the
+    // ~0.0002% encryption overhead, so 100 GB fits ten 10 GB files). 0 disables it.
+    'file_daily_quota_gb' => (int) env('FILE_DAILY_QUOTA_GB', 100),
+
     'guest_link_ttl_hours' => (int) env('GUEST_LINK_TTL_HOURS', 24),
 
     /*

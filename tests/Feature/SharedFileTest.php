@@ -222,7 +222,7 @@ test('rejects out-of-order chunks', function () {
     $initResponse = $this->postJson('/api/files/initiate', [
         'name' => 'test.txt',
         'mime_type' => 'text/plain',
-        'size' => 200,
+        'size' => 9 * 1024 * 1024,
         'total_chunks' => 2,
         'encryption_salt' => base64_encode(random_bytes(16)),
         'client_iv' => base64_encode(random_bytes(12)),
@@ -258,7 +258,7 @@ test('complete rejects incomplete upload', function () {
     $initResponse = $this->postJson('/api/files/initiate', [
         'name' => 'test.txt',
         'mime_type' => 'text/plain',
-        'size' => 200,
+        'size' => 9 * 1024 * 1024,
         'total_chunks' => 2,
         'encryption_salt' => base64_encode(random_bytes(16)),
         'client_iv' => base64_encode(random_bytes(12)),

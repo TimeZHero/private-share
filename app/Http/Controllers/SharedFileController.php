@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InitiateUploadRequest;
 use App\Jobs\DeleteStorageObject;
 use App\Models\PendingUpload;
 use App\Models\SharedFile;
+use App\Services\UploadQuota;
+use App\Support\ClientIdentity;
 use App\Support\Uploader;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -25,19 +28,9 @@ class SharedFileController extends Controller
      * The client declares the file metadata and how many chunks it will send.
      * Returns an upload_id the client uses for subsequent chunk uploads.
      */
-    public function initiate(Request $request): JsonResponse
+    public function initiate(InitiateUploadRequest $request, UploadQuota $quota): JsonResponse
     {
-        $maxGb = config('features.file_max_size_gb', 10);
-        $maxBytes = $maxGb * 1024 * 1024 * 1024;
-
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'mime_type' => ['required', 'string', 'max:127'],
-            'size' => ['required', 'integer', 'min:1', "max:{$maxBytes}"],
-            'total_chunks' => ['required', 'integer', 'min:1'],
-            'encryption_salt' => ['required', 'string', 'max:64'],
-            'client_iv' => ['required', 'string', 'max:24'],
-        ]);
+        $quota->reserve(ClientIdentity::of($request), $request->integer('size'));
 
         $uploadId = (string) Str::uuid();
         $tempPath = storage_path("app/private/uploads/{$uploadId}");
@@ -78,6 +71,15 @@ class SharedFileController extends Controller
 
         $chunkIndex = $request->integer('chunk_index');
         $expectedIndex = $pendingUpload->received_chunks;
+        $chunkBytes = (int) $request->file('chunk')->getSize();
+
+        if ($chunkBytes > PendingUpload::CHUNK_BYTES + PendingUpload::TAG_BYTES
+            || $pendingUpload->receivedBytes() + $chunkBytes > $pendingUpload->expectedStoredBytes()) {
+            return response()->json([
+                'error' => 'chunk_too_large',
+                'message' => 'This chunk is larger than the file size declared when the upload started.',
+            ], 422);
+        }
 
         if ($chunkIndex !== $expectedIndex) {
             return response()->json([
@@ -116,13 +118,7 @@ class SharedFileController extends Controller
             ], 409);
         }
 
-        $assembledSize = file_exists($pendingUpload->temp_path) ? filesize($pendingUpload->temp_path) : 0;
-        $isClientEncrypted = $pendingUpload->encryption_salt && $pendingUpload->client_iv;
-        $expectedSize = $isClientEncrypted
-            ? $pendingUpload->total_size + ($pendingUpload->total_chunks * 16)
-            : $pendingUpload->total_size;
-
-        if ($assembledSize !== $expectedSize) {
+        if ($pendingUpload->receivedBytes() !== $pendingUpload->expectedStoredBytes()) {
             @unlink($pendingUpload->temp_path);
             $pendingUpload->delete();
 
