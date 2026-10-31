@@ -29,7 +29,6 @@ Built with Laravel and Tailwind CSS.
 ## Self-Hosting
 
 This project is **not a service**. Fork it and deploy your own instance for maximum trust.
-This repository does not address deployment and the docker files are intended for development only.
 
 ### Development
 
