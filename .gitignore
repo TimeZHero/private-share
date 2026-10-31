@@ -1,28 +1,54 @@
-/.phpunit.cache
-/bootstrap/ssr
+# Dependencies
 /node_modules
+/vendor
+
+# Build artifacts
+/bootstrap/ssr
 /public/build
 /public/hot
 /public/storage
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
-/storage/*.key
-/storage/pail
-/vendor
-.DS_Store
+
+# Environment
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
+.env.*
+!.env.example
+!.env.*.encrypted
+
+# Secrets
 /auth.json
+/storage/*.key
+
+# Laravel
+/storage/pail
+
+# Testing
+/.phpunit.cache
+.phpunit.result.cache
+clover.xml
+
+# IDEs
 /.fleet
 /.idea
 /.nova
 /.vscode
 /.zed
+.phpactor.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# RoadRunner
+/rr
+
+# Legacy
+Homestead.json
+Homestead.yaml
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log

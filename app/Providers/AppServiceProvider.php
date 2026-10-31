@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\RateLimit;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Pennant\Middleware\EnsureFeaturesAreActive;
 
@@ -27,5 +28,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         EnsureFeaturesAreActive::whenInactive(fn () => abort(404));
+
+        // Deploys briefly run old and new containers side by side; the lock lives in the shared cache store.
+        Schedule::alwaysOnOneServer();
     }
 }
