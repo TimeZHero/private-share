@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\GuestLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 /*
@@ -52,7 +55,19 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Accepts the guest link and returns the cookie value a browser would keep,
+ * then drops the session as if it had timed out.
+ */
+function acceptAndForgetSession(GuestLink $guestLink): string
 {
-    // ..
+    $value = test()->post(URL::signedRoute('guest.accept', ['guestLink' => $guestLink->id]))
+        ->getCookie('guest_access')
+        ->getValue();
+
+    test()->flushSession();
+    // The test app keeps queued cookies across requests; a real one does not.
+    Cookie::flushQueuedCookies();
+
+    return $value;
 }

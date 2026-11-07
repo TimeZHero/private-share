@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\GuestLink;
+use App\Services\GuestAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,19 +29,13 @@ class GuestSessionController extends Controller
         ]);
     }
 
-    public function store(Request $request, GuestLink $guestLink): RedirectResponse
+    public function store(Request $request, GuestLink $guestLink, GuestAccess $guestAccess): RedirectResponse
     {
         $this->ensureUsable($guestLink);
 
-        if (! $guestLink->consume()) {
+        if (! $guestAccess->start($request, $guestLink)) {
             abort(410, 'This guest link has already been used.');
         }
-
-        $request->session()->regenerate();
-        $request->session()->put('guest_link_id', $guestLink->id);
-        $request->session()->put('guest_link_expires_at', $guestLink->expires_at->toIso8601String());
-
-        Log::info('Guest session started', ['guest_link_id' => $guestLink->id]);
 
         return redirect()->route('home');
     }

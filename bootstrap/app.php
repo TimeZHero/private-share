@@ -7,6 +7,7 @@ use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventResponseCaching;
+use App\Http\Middleware\RestoreGuestAccess;
 use App\Http\Responses\TooManyAttemptsResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             AddLogContext::class,
+            RestoreGuestAccess::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -44,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureFrontendRequestsAreStateful::class,
         ], append: [
             AddLogContext::class,
+            RestoreGuestAccess::class,
             PreventResponseCaching::class,
         ]);
     })

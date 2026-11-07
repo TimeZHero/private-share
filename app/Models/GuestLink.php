@@ -23,6 +23,10 @@ class GuestLink extends Model
         'expires_at',
     ];
 
+    protected $hidden = [
+        'access_token_hash',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -62,13 +66,13 @@ class GuestLink extends Model
      * Marks the link as used unless it already was or has expired. A single
      * conditional UPDATE, so two concurrent clicks cannot both get in.
      */
-    public function consume(): bool
+    public function consume(string $accessTokenHash): bool
     {
         $consumed = static::query()
             ->whereKey($this->getKey())
             ->whereNull('used_at')
             ->where('expires_at', '>', now())
-            ->update(['used_at' => now()]) === 1;
+            ->update(['used_at' => now(), 'access_token_hash' => $accessTokenHash]) === 1;
 
         if ($consumed) {
             $this->refresh();

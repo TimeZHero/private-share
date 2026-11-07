@@ -3,14 +3,20 @@
 namespace App\Http\Middleware;
 
 use App\Features\Authentication;
+use App\Services\GuestAccess;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Laravel\Pennant\Feature;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * The guest grant was already checked against the database by
+ * RestoreGuestAccess, so its presence in the session is enough here.
+ */
 class EnsureAuthenticated
 {
+    public function __construct(private GuestAccess $guestAccess) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         if (! Feature::active(Authentication::class)) {
@@ -21,7 +27,7 @@ class EnsureAuthenticated
             return $next($request);
         }
 
-        if ($this->hasValidGuestSession($request)) {
+        if ($this->guestAccess->isGuest($request)) {
             return $next($request);
         }
 
@@ -30,28 +36,5 @@ class EnsureAuthenticated
         }
 
         return redirect()->route('login');
-    }
-
-    private function hasValidGuestSession(Request $request): bool
-    {
-        // API calls from outside the SPA (no Sanctum stateful origin) carry no session.
-        if (! $request->hasSession()) {
-            return false;
-        }
-
-        $guestLinkId = $request->session()->get('guest_link_id');
-        $expiresAt = $request->session()->get('guest_link_expires_at');
-
-        if (! $guestLinkId || ! $expiresAt) {
-            return false;
-        }
-
-        if (Carbon::parse($expiresAt)->isPast()) {
-            $request->session()->forget(['guest_link_id', 'guest_link_expires_at']);
-
-            return false;
-        }
-
-        return true;
     }
 }

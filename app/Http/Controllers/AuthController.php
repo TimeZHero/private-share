@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\GoogleAccountPolicy;
+use App\Services\GuestAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,10 +59,14 @@ class AuthController extends Controller
         return redirect()->route('home');
     }
 
-    public function logout(Request $request): JsonResponse|RedirectResponse
+    public function logout(Request $request, GuestAccess $guestAccess): JsonResponse|RedirectResponse
     {
         if ($request->user()) {
             Auth::guard('web')->logout();
+        }
+
+        if ($guestAccess->isGuest($request)) {
+            $guestAccess->end($request, 'signed_out');
         }
 
         $request->session()->invalidate();
