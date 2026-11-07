@@ -462,8 +462,7 @@ function ErrorView({
                     Decryption Failed
                 </h1>
                 <p className="mx-auto mb-2 max-w-md text-[var(--color-text)]/60">
-                    The secret could not be decrypted. This usually means the
-                    encryption key in the URL is missing or corrupted.
+                    The key in the link is missing or wrong.
                 </p>
                 <p className="text-sm text-[var(--color-text)]/40">
                     Make sure you copied the complete URL including the{' '}

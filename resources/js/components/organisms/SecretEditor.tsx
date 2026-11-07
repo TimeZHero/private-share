@@ -216,7 +216,7 @@ export function SecretEditor({
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                     </svg>
-                    This secret will auto-expire in 30 days if not viewed
+                    Expires in 30 days if not opened
                 </p>
 
                 {(result.features.password || result.features.markdown) && (
