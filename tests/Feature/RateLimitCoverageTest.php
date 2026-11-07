@@ -17,7 +17,6 @@ test('every application route is rate limited', function () {
         'up',                          // health check polled by monitoring
         'storage/{path}',              // framework local-disk route, signature-protected
         'sanctum/csrf-cookie',
-        '_boost/browser-logs',         // local only
         '_inertia/devtools/entries',   // local only
         '_inertia/devtools/entries/{id}',
     ];
