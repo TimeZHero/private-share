@@ -20,26 +20,52 @@ describe('Guest Link Creation (API)', function () {
         $response->assertUnauthorized();
     });
 
-    it('creates a guest link with default 24h TTL', function () {
-        $user = User::factory()->create();
+    it('lasts the chosen number of days from creation', function (int $days, string $expectedExpiry) {
+        $this->travelTo('2026-11-07 10:00:00');
 
-        $response = $this->actingAs($user)->postJson('/api/guest-links');
+        $response = $this->actingAs(User::factory()->create())
+            ->postJson('/api/guest-links', ['duration_days' => $days]);
 
         $response->assertSuccessful()
-            ->assertJsonStructure(['id', 'url', 'expires_at', 'ttl_hours']);
+            ->assertJsonPath('duration_days', $days)
+            ->assertJsonPath('expires_at', $expectedExpiry);
+    })->with([
+        '1 day' => [1, '2026-11-08T10:00:00+00:00'],
+        '7 days' => [7, '2026-11-14T10:00:00+00:00'],
+        '14 days' => [14, '2026-11-21T10:00:00+00:00'],
+    ]);
 
-        expect($response->json('ttl_hours'))->toBe(24);
+    it('rejects durations other than 1, 7 or 14 days', function (mixed $days) {
+        $payload = $days === null ? [] : ['duration_days' => $days];
 
-        $this->assertDatabaseHas('guest_links', [
-            'id' => $response->json('id'),
-            'user_id' => $user->id,
-        ]);
+        $this->actingAs(User::factory()->create())
+            ->postJson('/api/guest-links', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('duration_days');
+
+        expect(GuestLink::count())->toBe(0);
+    })->with([
+        'missing' => [null],
+        'zero' => [0],
+        'three' => [3],
+        'a year' => [365],
+        'text' => ['seven'],
+    ]);
+
+    it('does not let a guest invite further guests', function () {
+        $guestLink = GuestLink::factory()->create();
+
+        $this->withSession([
+            'guest_link_id' => $guestLink->id,
+            'guest_link_expires_at' => $guestLink->expires_at->toIso8601String(),
+        ])->postJson('/api/guest-links', ['duration_days' => 1], ['Referer' => 'http://localhost/'])
+            ->assertUnauthorized();
     });
 
     it('returns a signed URL that points to the guest access route', function () {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/api/guest-links');
+        $response = $this->actingAs($user)->postJson('/api/guest-links', ['duration_days' => 1]);
 
         $url = $response->json('url');
         expect($url)->toContain('/guest/');

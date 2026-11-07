@@ -14,20 +14,23 @@ beforeEach(function () {
 });
 
 describe('Guest Link E2E', function () {
-    it('shows a toast with the link duration when a guest link is created', function () {
-        $user = User::factory()->create();
+    it('creates a guest link for the duration picked in the invite modal', function () {
+        config(['sanctum.stateful' => ['127.0.0.1:*']]);
+        $this->actingAs(User::factory()->create());
 
-        $this->actingAs($user);
-
-        $page = visit('/');
-
-        $page->waitForText('Sharing a secret')
+        visit('/')
+            ->waitForText('Sharing a secret')
             ->click('[aria-label="Close"]')
-            ->assertSee('Create Guest Link')
             ->click('Create Guest Link')
-            ->waitForText('Lasts 24 hours')
-            ->assertSee('Guest link')
-            ->assertSee('Lasts 24 hours');
+            ->waitForText('Invite a guest')
+            ->assertSee('1 day')
+            ->assertSee('14 days')
+            ->click('7 days')
+            ->waitForText('Works only once')
+            ->assertSee('Expires')
+            ->assertSee('Copy');
+
+        expect(GuestLink::sole()->expires_at->between(now()->addDays(7)->subMinute(), now()->addDays(7)))->toBeTrue();
     });
 
     it('lets a signed-in user share a secret', function () {

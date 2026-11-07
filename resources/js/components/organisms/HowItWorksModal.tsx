@@ -191,9 +191,8 @@ export function HowItWorksModal({ open, onClose }: HowItWorksModalProps) {
                             <span className="font-semibold text-[var(--color-text)]">
                                 Create Guest Link
                             </span>{' '}
-                            button at the top and send them the link. It grants
-                            temporary access to create secrets — no sign-up
-                            needed, and it expires automatically.
+                            button at the top, choose how long it lasts and send
+                            the link.
                         </p>
                     </div>
                 )}

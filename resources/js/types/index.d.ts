@@ -53,6 +53,7 @@ export interface SharedPageProps {
     };
     branding: Branding;
     features: Features;
+    guestLinkDurations: number[];
     appName: string;
     helpText: string | null;
     debug: boolean;

@@ -1,43 +1,41 @@
-import { copyToClipboard } from '@/lib/clipboard';
-import { createAndCopyGuestLink } from '@/services/guestLink';
+import {
+    createAndCopyGuestLink,
+    type CreatedGuestLink,
+} from '@/services/guestLink';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+const LAST_DURATION_KEY = 'privateshare:guest-link-duration';
+
 interface UseGuestLinkReturn {
     creating: boolean;
-    create: () => Promise<void>;
+    created: CreatedGuestLink | null;
+    lastDurationDays: number | null;
+    create: (durationDays: number) => Promise<void>;
+    reset: () => void;
 }
 
-function formatDuration(hours: number): string {
-    return hours === 1 ? '1 hour' : `${hours} hours`;
+function readLastDuration(): number | null {
+    const stored = Number(localStorage.getItem(LAST_DURATION_KEY));
+
+    return Number.isInteger(stored) && stored > 0 ? stored : null;
 }
 
 export function useGuestLink(): UseGuestLinkReturn {
     const [creating, setCreating] = useState(false);
+    const [created, setCreated] = useState<CreatedGuestLink | null>(null);
+    const [lastDurationDays, setLastDurationDays] = useState(readLastDuration);
 
-    const create = useCallback(async () => {
+    const create = useCallback(async (durationDays: number) => {
         setCreating(true);
         try {
-            const { url, ttlHours, copied } = await createAndCopyGuestLink();
-            const duration = `Lasts ${formatDuration(ttlHours)}`;
-
-            if (copied) {
-                toast.success('Guest link copied to clipboard', {
-                    description: duration,
-                });
-            } else {
-                toast.warning('Guest link created', {
-                    description: `${duration}. Couldn't copy automatically.`,
-                    action: {
-                        label: 'Copy',
-                        onClick: () => void copyToClipboard(url),
-                    },
-                });
-            }
-        } catch (err) {
+            setCreated(await createAndCopyGuestLink(durationDays));
+            localStorage.setItem(LAST_DURATION_KEY, String(durationDays));
+            setLastDurationDays(durationDays);
+        } catch (error) {
             toast.error(
-                err instanceof Error
-                    ? err.message
+                error instanceof Error
+                    ? error.message
                     : 'Failed to create guest link',
             );
         } finally {
@@ -45,5 +43,7 @@ export function useGuestLink(): UseGuestLinkReturn {
         }
     }, []);
 
-    return { creating, create };
+    const reset = useCallback(() => setCreated(null), []);
+
+    return { creating, created, lastDurationDays, create, reset };
 }

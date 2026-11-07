@@ -37,10 +37,10 @@ test('throttled API responses say how long to wait', function () {
     $user = User::factory()->create();
 
     foreach (range(1, 10) as $attempt) {
-        $this->actingAs($user)->postJson('/api/guest-links')->assertSuccessful();
+        $this->actingAs($user)->postJson('/api/guest-links', ['duration_days' => 1])->assertSuccessful();
     }
 
-    $this->actingAs($user)->postJson('/api/guest-links')
+    $this->actingAs($user)->postJson('/api/guest-links', ['duration_days' => 1])
         ->assertTooManyRequests()
         ->assertHeader('Retry-After')
         ->assertJson([
@@ -64,11 +64,11 @@ test('limits for signed-in users follow the user, not the IP', function () {
     $firstUser = User::factory()->create();
 
     foreach (range(1, 10) as $attempt) {
-        $this->actingAs($firstUser)->withServerVariables($sharedOfficeIp)->postJson('/api/guest-links');
+        $this->actingAs($firstUser)->withServerVariables($sharedOfficeIp)->postJson('/api/guest-links', ['duration_days' => 1]);
     }
 
     $this->actingAs(User::factory()->create())->withServerVariables($sharedOfficeIp)
-        ->postJson('/api/guest-links')
+        ->postJson('/api/guest-links', ['duration_days' => 1])
         ->assertSuccessful();
 });
 

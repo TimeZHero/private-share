@@ -14,8 +14,6 @@ return [
     // ~0.0002% encryption overhead, so 100 GB fits ten 10 GB files). 0 disables it.
     'file_daily_quota_gb' => (int) env('FILE_DAILY_QUOTA_GB', 100),
 
-    'guest_link_ttl_hours' => (int) env('GUEST_LINK_TTL_HOURS', 24),
-
     /*
     |--------------------------------------------------------------------------
     | Allowed Email Domains

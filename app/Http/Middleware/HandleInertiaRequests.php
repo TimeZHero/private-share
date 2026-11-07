@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\GuestLinkDuration;
 use App\Features\Authentication;
 use App\Features\FileUploads;
 use Illuminate\Http\Request;
@@ -47,6 +48,8 @@ class HandleInertiaRequests extends Middleware
                 'auth' => Feature::active(Authentication::class),
                 'fileUploads' => Feature::active(FileUploads::class),
             ],
+
+            'guestLinkDurations' => array_column(GuestLinkDuration::cases(), 'value'),
 
             'appName' => config('app.name'),
 

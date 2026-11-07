@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\GuestLinkDuration;
 use App\Models\GuestLink;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,8 +19,15 @@ class GuestLinkFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'expires_at' => now()->addHours(config('features.guest_link_ttl_hours', 24)),
+            'expires_at' => GuestLinkDuration::OneDay->expiresAt(),
         ];
+    }
+
+    public function lasting(GuestLinkDuration $duration): static
+    {
+        return $this->state(fn () => [
+            'expires_at' => $duration->expiresAt(),
+        ]);
     }
 
     public function expired(): static

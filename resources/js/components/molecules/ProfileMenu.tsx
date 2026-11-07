@@ -1,6 +1,7 @@
 import { Button } from '@/components/atoms/Button';
+import { GuestLinkModal } from '@/components/organisms/GuestLinkModal';
 import { HowItWorksModal } from '@/components/organisms/HowItWorksModal';
-import { useGuestLink } from '@/hooks/useGuestLink';
+import { formatExpiry } from '@/services/guestLink';
 import type { SharedPageProps } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,8 +14,8 @@ export function ProfileMenu() {
     const guest = auth?.guest;
     const [open, setOpen] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
+    const [guestLinkOpen, setGuestLinkOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const { creating, create } = useGuestLink();
 
     useEffect(() => {
         if (!localStorage.getItem(STORAGE_KEY)) {
@@ -41,6 +42,8 @@ export function ProfileMenu() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
+    const closeGuestLink = useCallback(() => setGuestLinkOpen(false), []);
+
     const handleLogout = useCallback(() => {
         router.post('/auth/logout');
     }, []);
@@ -52,12 +55,10 @@ export function ProfileMenu() {
     const displayEmail = user?.email ?? null;
     const initial = displayName.charAt(0).toUpperCase();
 
-    const guestLinkLabel = creating ? 'Creating...' : 'Create Guest Link';
-
     return (
         <div ref={wrapperRef} className="flex items-center gap-3">
             {user && (
-                <Button size="sm" onClick={create} disabled={creating}>
+                <Button size="sm" onClick={() => setGuestLinkOpen(true)}>
                     <svg
                         className="h-4 w-4"
                         fill="none"
@@ -71,7 +72,7 @@ export function ProfileMenu() {
                             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
                         />
                     </svg>
-                    {guestLinkLabel}
+                    Create Guest Link
                 </Button>
             )}
 
@@ -121,10 +122,7 @@ export function ProfileMenu() {
                                 )}
                                 {guest && !user && (
                                     <p className="text-xs text-[var(--color-text)]/40">
-                                        Expires{' '}
-                                        {new Date(
-                                            guest.expiresAt,
-                                        ).toLocaleString()}
+                                        Expires {formatExpiry(guest.expiresAt)}
                                     </p>
                                 )}
                             </div>
@@ -177,6 +175,7 @@ export function ProfileMenu() {
                 open={infoOpen}
                 onClose={() => setInfoOpen(false)}
             />
+            <GuestLinkModal open={guestLinkOpen} onClose={closeGuestLink} />
         </div>
     );
 }

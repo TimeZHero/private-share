@@ -2,6 +2,7 @@ import { Button } from '@/components/atoms/Button';
 import { Logo } from '@/components/atoms/Logo';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { GlowCard } from '@/components/molecules/GlowCard';
+import { formatExpiry } from '@/services/guestLink';
 import type { GuestAccessPageProps } from '@/types';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
@@ -11,7 +12,7 @@ export default function GuestAccess({
     expiresAt,
 }: GuestAccessPageProps) {
     const [submitting, setSubmitting] = useState(false);
-    const expiry = new Date(expiresAt).toLocaleString();
+    const expiry = formatExpiry(expiresAt);
 
     const continueAsGuest = () => {
         setSubmitting(true);
@@ -26,7 +27,7 @@ export default function GuestAccess({
                     You're invited
                 </h1>
                 <p className="text-sm text-[var(--color-text)]/60">
-                    Share secrets as a guest until {expiry}
+                    Guest access expires {expiry}
                 </p>
             </div>
 
@@ -40,7 +41,8 @@ export default function GuestAccess({
                 </Button>
 
                 <p className="mt-4 text-center text-xs text-[var(--color-text)]/40">
-                    This link works once, in this browser only
+                    You can only use this link one time. Do not use if you are
+                    on a shared computer
                 </p>
             </GlowCard>
         </AppLayout>
