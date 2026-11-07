@@ -2,19 +2,16 @@
 
 namespace Database\Seeders;
 
+use App\Enums\GuestLinkDuration;
+use App\Models\GuestLink;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\URL;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
@@ -23,5 +20,50 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        $this->seedGuestLinks();
+    }
+
+    /**
+     * One unused link per duration plus an expired one, with fixed ids so a
+     * new seed run resets them (each link can only be accepted once).
+     */
+    private function seedGuestLinks(): void
+    {
+        $creator = User::firstOrCreate(
+            ['email' => 'dev@localhost'],
+            [
+                'name' => 'Dev User',
+                'provider' => 'debug',
+                'provider_id' => 'debug-0',
+                'email_verified_at' => now(),
+            ],
+        );
+
+        $guestLinks = [];
+
+        foreach (GuestLinkDuration::cases() as $duration) {
+            $guestLinks["{$duration->value}-day"] = [
+                'id' => str_pad("seeded-guest-{$duration->value}d", 32, '0'),
+                'expires_at' => $duration->expiresAt(),
+            ];
+        }
+
+        $guestLinks['expired'] = [
+            'id' => str_pad('seeded-guest-expired', 32, '0'),
+            'expires_at' => now()->subHour(),
+        ];
+
+        foreach ($guestLinks as $label => $attributes) {
+            $guestLink = GuestLink::query()->firstOrNew(['id' => $attributes['id']]);
+            $guestLink->forceFill([
+                'user_id' => $creator->id,
+                'expires_at' => $attributes['expires_at'],
+                'used_at' => null,
+                'access_token_hash' => null,
+            ])->save();
+
+            $this->command?->info("Guest link ({$label}): ".URL::signedRoute('guest.access', ['guestLink' => $guestLink->id]));
+        }
     }
 }
