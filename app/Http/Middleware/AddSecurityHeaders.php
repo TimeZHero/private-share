@@ -22,7 +22,10 @@ use Symfony\Component\HttpFoundation\Response;
 class AddSecurityHeaders
 {
     /** Must match the stylesheet in resources/views/app.blade.php. */
-    private const string FONT_ORIGIN = 'https://fonts.bunny.net';
+    private const string FONT_STYLESHEET_ORIGIN = 'https://fonts.bunny.net';
+
+    /** Bunny's stylesheet serves the font files from jsDelivr's Fontsource mirror. */
+    private const string FONT_FILE_ORIGIN = 'https://cdn.jsdelivr.net';
 
     private const string GOOGLE_AVATAR_ORIGIN = 'https://*.googleusercontent.com';
 
@@ -49,8 +52,8 @@ class AddSecurityHeaders
         $directives = [
             'default-src' => ["'self'"],
             'script-src' => ["'self'", "'nonce-".Vite::cspNonce()."'", ...array_slice($devServer, 0, 1)],
-            'style-src' => ["'self'", "'unsafe-inline'", self::FONT_ORIGIN, ...array_slice($devServer, 0, 1)],
-            'font-src' => ["'self'", self::FONT_ORIGIN],
+            'style-src' => ["'self'", "'unsafe-inline'", self::FONT_STYLESHEET_ORIGIN, ...array_slice($devServer, 0, 1)],
+            'font-src' => ["'self'", self::FONT_STYLESHEET_ORIGIN, self::FONT_FILE_ORIGIN],
             'img-src' => ["'self'", 'data:', 'blob:', ...$this->avatarOrigins()],
             'connect-src' => [
                 "'self'",

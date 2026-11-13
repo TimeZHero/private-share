@@ -134,7 +134,7 @@ describe('full content security policy', function () {
 
         expect(cspDirective($policy, 'default-src'))->toBe(["'self'"])
             ->and(cspDirective($policy, 'img-src'))->toBe(["'self'", 'data:', 'blob:'])
-            ->and(cspDirective($policy, 'font-src'))->toBe(["'self'", 'https://fonts.bunny.net'])
+            ->and(cspDirective($policy, 'font-src'))->toBe(["'self'", 'https://fonts.bunny.net', 'https://cdn.jsdelivr.net'])
             ->and(cspDirective($policy, 'style-src'))->toBe(["'self'", "'unsafe-inline'", 'https://fonts.bunny.net'])
             ->and(cspDirective($policy, 'object-src'))->toBe(["'none'"])
             ->and(cspDirective($policy, 'base-uri'))->toBe(["'self'"])

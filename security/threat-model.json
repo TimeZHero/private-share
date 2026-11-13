@@ -1662,7 +1662,7 @@
                         },
                         "attrs": {
                             "text": {
-                                "text": "fonts.bunny.net"
+                                "text": "fonts.bunny.net + cdn.jsdelivr.net"
                             },
                             "body": {
                                 "stroke": "#333333",
@@ -1676,8 +1676,8 @@
                         "id": "0f575bef-bdef-5411-b096-a4dee467b696",
                         "data": {
                             "type": "tm.Actor",
-                            "name": "fonts.bunny.net",
-                            "description": "Third-party font CSS loaded by every page.",
+                            "name": "fonts.bunny.net + cdn.jsdelivr.net",
+                            "description": "Third-party font CSS (Bunny) and the font files it references (jsDelivr Fontsource mirror), loaded by every page.",
                             "outOfScope": false,
                             "reasonOutOfScope": "",
                             "hasOpenThreats": false,
@@ -1688,8 +1688,8 @@
                                     "status": "NotApplicable",
                                     "severity": "Low",
                                     "type": "Tampering",
-                                    "description": "The stylesheet is loaded without Subresource Integrity, and every visit leaks the visitor's IP to the CDN (GDPR).",
-                                    "mitigation": "Accepted risk: fonts cannot be self-hosted; the CDN serves CSS and fonts only, never scripts.",
+                                    "description": "The stylesheet is loaded without Subresource Integrity, and every visit leaks the visitor's IP to both CDNs (GDPR). jsDelivr serves arbitrary npm/GitHub content.",
+                                    "mitigation": "Accepted risk: fonts cannot be self-hosted. Both origins are allowed only for what they serve: Bunny in style-src/font-src, jsDelivr in font-src only, so neither can run scripts or receive fetch/XHR, and an attacker cannot read jsDelivr's request logs.",
                                     "modelType": "STRIDE",
                                     "new": false,
                                     "number": 65,
