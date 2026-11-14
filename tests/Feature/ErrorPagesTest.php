@@ -148,3 +148,11 @@ it('does not turn redirect responses into error pages', function () {
     $this->get('/test-redirect')
         ->assertRedirect('/somewhere');
 });
+
+it('shares the same props as every other page, so the layout can render', function () {
+    $sharedProps = fn (string $uri) => collect($this->get($uri)->viewData('page')['props'])
+        ->only($this->get('/')->viewData('page')['sharedProps'])
+        ->map(fn ($value) => gettype($value));
+
+    expect($sharedProps('/missingSecret'))->toEqual($sharedProps('/'));
+});

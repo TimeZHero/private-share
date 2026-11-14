@@ -1,7 +1,5 @@
 <?php
 
-use App\Features\Authentication;
-use App\Features\FileUploads;
 use App\Http\Middleware\AddLogContext;
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\HandleAppearance;
@@ -17,7 +15,6 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Laravel\Pennant\Feature;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -83,37 +80,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return $response;
             }
 
-            $user = $request->user();
-            $guestExpiresAt = $request->hasSession() ? $request->session()->get('guest_link_expires_at') : null;
-
-            Inertia::share([
-                'auth' => [
-                    'user' => $user ? [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'avatar' => $user->avatar,
-                    ] : null,
-                    'guest' => $guestExpiresAt ? ['expiresAt' => $guestExpiresAt] : null,
-                ],
-                'branding' => [
-                    'primary' => config('branding.primary'),
-                    'secondary' => config('branding.secondary'),
-                    'accent' => config('branding.accent'),
-                    'action' => config('branding.action'),
-                    'background' => config('branding.background'),
-                    'foreground' => config('branding.foreground'),
-                    'logo' => config('branding.logo'),
-                    'logoSize' => config('branding.logo_size'),
-                ],
-                'features' => [
-                    'auth' => Feature::active(Authentication::class),
-                    'fileUploads' => Feature::active(FileUploads::class),
-                ],
-                'appName' => config('app.name'),
-                'debug' => app()->isLocal() && config('app.debug'),
-                'flash' => ['error' => null, 'success' => null],
-            ]);
+            Inertia::share(app(HandleInertiaRequests::class)->share($request));
 
             // Only surface messages from intentional HTTP exceptions (e.g. abort(410, '...')).
             // Raw messages from unexpected exceptions could leak internal details.

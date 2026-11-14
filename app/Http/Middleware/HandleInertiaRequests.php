@@ -16,7 +16,9 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $guestExpiresAt = $request->session()->get('guest_link_expires_at');
+        // Error pages reuse these props, and unmatched routes never start a session.
+        $session = $request->hasSession() ? $request->session() : null;
+        $guestExpiresAt = $session?->get('guest_link_expires_at');
 
         return [
             ...parent::share($request),
@@ -41,7 +43,6 @@ class HandleInertiaRequests extends Middleware
                 'background' => config('branding.background'),
                 'foreground' => config('branding.foreground'),
                 'logo' => config('branding.logo'),
-                'logoSize' => config('branding.logo_size'),
             ],
 
             'features' => [
@@ -58,8 +59,8 @@ class HandleInertiaRequests extends Middleware
             'debug' => app()->isLocal() && config('app.debug'),
 
             'flash' => [
-                'error' => fn () => $request->session()->get('error'),
-                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $session?->get('error'),
+                'success' => fn () => $session?->get('success'),
             ],
         ];
     }
