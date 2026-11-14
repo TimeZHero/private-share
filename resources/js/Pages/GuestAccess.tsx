@@ -1,5 +1,4 @@
 import { Button } from '@/components/atoms/Button';
-import { Logo } from '@/components/atoms/Logo';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { GlowCard } from '@/components/molecules/GlowCard';
 import { formatExpiry } from '@/services/guestLink';
@@ -21,8 +20,7 @@ export default function GuestAccess({
 
     return (
         <AppLayout title="Guest Access" maxWidth="max-w-sm" showFooter={false}>
-            <div className="mb-8 text-center">
-                <Logo linked={false} />
+            <div className="mt-6 mb-6 text-center">
                 <h1 className="mb-1 text-3xl font-semibold tracking-tight">
                     You're invited
                 </h1>

@@ -17,10 +17,6 @@ export interface Branding {
         show_container: boolean;
         svg: string;
     };
-    logoSize: {
-        large: string;
-        small: string;
-    };
 }
 
 export interface Features {

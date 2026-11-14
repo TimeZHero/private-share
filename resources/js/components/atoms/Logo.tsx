@@ -1,11 +1,5 @@
-import { cn } from '@/lib/utils';
 import type { Branding, SharedPageProps } from '@/types';
 import { usePage } from '@inertiajs/react';
-
-interface LogoProps {
-    linked?: boolean;
-    size?: 'large' | 'small';
-}
 
 function LogoImage({
     branding,
@@ -27,44 +21,36 @@ function LogoImage({
     );
 }
 
-export function Logo({ linked = true, size = 'large' }: LogoProps) {
-    const { branding } = usePage<SharedPageProps>().props;
+export function Logo() {
+    const { branding, appName } = usePage<SharedPageProps>().props;
     if (!branding) return null;
-    const sizeClass = branding.logoSize[size];
-    const Tag = linked ? 'a' : 'div';
-    const linkProps = linked ? { href: '/' } : {};
-
-    if (branding.logo.show_container) {
-        return (
-            <Tag
-                {...linkProps}
-                className={cn(
-                    'mb-5 inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-secondary-600)] p-3.5 shadow-[var(--color-primary-500)]/30 shadow-lg',
-                    linked &&
-                        'transition-transform duration-200 hover:scale-105',
-                    sizeClass,
-                )}
-            >
-                <LogoImage
-                    branding={branding}
-                    className="h-full w-full object-contain"
-                />
-            </Tag>
-        );
-    }
 
     return (
-        <Tag
-            {...linkProps}
-            className={cn(
-                'mb-5 inline-block',
-                linked && 'transition-transform duration-200 hover:scale-105',
-            )}
+        <a
+            href="/"
+            aria-label={appName}
+            className="group/logo flex min-w-0 items-center gap-3"
         >
-            <LogoImage
-                branding={branding}
-                className={branding.logo.image ? 'h-14 w-auto' : sizeClass}
-            />
-        </Tag>
+            {branding.logo.show_container ? (
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-secondary-600)] p-2 shadow-[var(--color-primary-500)]/30 shadow-md transition-transform duration-200 group-hover/logo:scale-105">
+                    <LogoImage
+                        branding={branding}
+                        className="h-full w-full object-contain"
+                    />
+                </span>
+            ) : (
+                <LogoImage
+                    branding={branding}
+                    className={
+                        branding.logo.image
+                            ? 'h-9 w-auto shrink-0'
+                            : 'h-9 w-9 shrink-0'
+                    }
+                />
+            )}
+            <span className="truncate text-lg font-semibold tracking-tight">
+                {appName}
+            </span>
+        </a>
     );
 }

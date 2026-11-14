@@ -43,7 +43,7 @@ export function GuestLinkModal({ open, onClose }: GuestLinkModalProps) {
                                 disabled={creating}
                                 onClick={() => void create(days)}
                                 className={cn(
-                                    'py-4',
+                                    'px-2 py-4 whitespace-nowrap',
                                     days === lastDurationDays &&
                                         'border-[var(--color-button)]/60',
                                 )}

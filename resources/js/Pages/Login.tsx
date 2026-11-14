@@ -1,5 +1,4 @@
 import { ErrorAlert } from '@/components/atoms/ErrorAlert';
-import { Logo } from '@/components/atoms/Logo';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { GlowCard } from '@/components/molecules/GlowCard';
 import type { LoginPageProps } from '@/types';
@@ -11,8 +10,7 @@ export default function Login({
 }: LoginPageProps) {
     return (
         <AppLayout title="Sign In" maxWidth="max-w-sm" showFooter={false}>
-            <div className="mb-8 text-center">
-                <Logo linked={false} />
+            <div className="mt-6 mb-6 text-center">
                 <h1 className="mb-1 text-3xl font-semibold tracking-tight">
                     Sign in
                 </h1>

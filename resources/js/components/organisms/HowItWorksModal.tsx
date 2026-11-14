@@ -191,8 +191,8 @@ export function HowItWorksModal({ open, onClose }: HowItWorksModalProps) {
                             <span className="font-semibold text-[var(--color-text)]">
                                 Create Guest Link
                             </span>{' '}
-                            button at the top, choose how long it lasts and send
-                            the link.
+                            button at the top (in your account menu on phones),
+                            choose how long it lasts and send the link.
                         </p>
                     </div>
                 )}

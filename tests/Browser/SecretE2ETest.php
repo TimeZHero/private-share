@@ -93,10 +93,10 @@ describe('Secret Creation E2E', function () {
             ->click('[aria-label="Close"]')
             ->fill('#content', 'My secret message')
             ->click('Share Secret')
-            ->waitForText('Secret Created!')
-            ->assertSee('The encryption key after # is required to decrypt');
+            ->waitForText('Secret Created!');
 
-        expect(Secret::count())->toBe(1);
+        expect($page->value('input[readonly]'))->toContain('#')
+            ->and(Secret::count())->toBe(1);
     });
 
     it('validates empty content', function () {

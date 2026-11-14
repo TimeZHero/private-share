@@ -8,6 +8,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const STORAGE_KEY = 'privateshare:how-it-works-seen';
 
+function LinkIcon({ className }: { className: string }) {
+    return (
+        <svg
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+            />
+        </svg>
+    );
+}
+
 export function ProfileMenu() {
     const { auth, features } = usePage<SharedPageProps>().props;
     const user = auth?.user;
@@ -42,6 +60,11 @@ export function ProfileMenu() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
+    const openGuestLink = useCallback(() => {
+        setOpen(false);
+        setGuestLinkOpen(true);
+    }, []);
+
     const closeGuestLink = useCallback(() => setGuestLinkOpen(false), []);
 
     const handleLogout = useCallback(() => {
@@ -56,22 +79,15 @@ export function ProfileMenu() {
     const initial = displayName.charAt(0).toUpperCase();
 
     return (
-        <div ref={wrapperRef} className="flex items-center gap-3">
+        <div ref={wrapperRef} className="flex shrink-0 items-center gap-3">
             {user && (
-                <Button size="sm" onClick={() => setGuestLinkOpen(true)}>
-                    <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                        />
-                    </svg>
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={openGuestLink}
+                    className="max-sm:hidden"
+                >
+                    <LinkIcon className="h-4 w-4" />
                     Create Guest Link
                 </Button>
             )}
@@ -86,11 +102,11 @@ export function ProfileMenu() {
                         <img
                             src={user.avatar}
                             alt={displayName}
-                            className="h-10 w-10 rounded-full ring-2 ring-[var(--color-text)]/15 transition-opacity hover:opacity-80"
+                            className="h-9 w-9 rounded-full ring-2 ring-[var(--color-text)]/15 transition-opacity hover:opacity-80"
                             referrerPolicy="no-referrer"
                         />
                     ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-500)] text-base font-semibold text-[var(--color-primary-contrast)] ring-2 ring-[var(--color-text)]/15">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-primary-500)] text-sm font-semibold text-[var(--color-primary-contrast)] ring-2 ring-[var(--color-text)]/15">
                             {initial}
                         </div>
                     )}
@@ -128,6 +144,15 @@ export function ProfileMenu() {
                             </div>
                         </div>
                         <div className="border-t border-white/10">
+                            {user && (
+                                <button
+                                    onClick={openGuestLink}
+                                    className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 transition-colors hover:bg-white/5 sm:hidden"
+                                >
+                                    <LinkIcon className="h-4 w-4 text-[var(--color-text)]/60" />
+                                    Create Guest Link
+                                </button>
+                            )}
                             <button
                                 onClick={openInfo}
                                 className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text)]/80 transition-colors hover:bg-white/5"
