@@ -219,10 +219,6 @@
     background-color: color-mix(in srgb, var(--color-text) 32%, transparent);
 }
 
-/* Body font */
-body {
-    font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
-}
 .mono,
 textarea {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
